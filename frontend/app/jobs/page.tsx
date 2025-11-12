@@ -1,0 +1,16 @@
+import { DashboardShell } from "@/components/dashboard-shell"
+import { JobsTable } from "@/components/jobs/jobs-table"
+
+export default function JobsPage() {
+  return (
+    <DashboardShell>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Jobs</h1>
+          <p className="text-muted-foreground">Manage and track all jobs</p>
+        </div>
+        <JobsTable />
+      </div>
+    </DashboardShell>
+  )
+}

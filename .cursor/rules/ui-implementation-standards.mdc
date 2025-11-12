@@ -1,0 +1,119 @@
+---
+description: UI Implementation Standards - All UI-related tasks must follow the UI Implementation Specification
+globs: 
+  - "**/ui/**/*"
+  - "**/web/**/*"
+  - "**/frontend/**/*"
+  - "docs/stories/**/*ui*.md"
+  - "docs/stories/**/*frontend*.md"
+alwaysApply: true
+---
+
+# UI Implementation Standards
+
+## Mandatory Reference
+
+**ALL UI-related tasks, stories, and implementations MUST follow the UI Implementation Specification located at:**
+
+`docs/ui-implementation-spec.md`
+
+## When This Rule Applies
+
+This rule applies to:
+- All UI component development
+- All frontend implementation tasks
+- All user story creation that involves UI/frontend work
+- All design system implementations
+- All accessibility implementations
+- All responsive design work
+
+## Key Requirements
+
+### 1. Design System Compliance
+
+All UI components MUST use:
+- **Color Palette:** As defined in Section 2.1 of the UI spec
+- **Typography:** As defined in Section 2.2 (Inter font stack, type scale)
+- **Spacing System:** 4px base unit as defined in Section 2.3
+- **Border Radius:** As defined in Section 2.4
+- **Shadows:** As defined in Section 2.5
+
+### 2. Component Library
+
+- **Primary Library:** shadcn/ui (built on Radix UI + Tailwind CSS)
+- All components must use shadcn/ui base components when available
+- Custom components must follow the design system specifications
+
+### 3. Technology Stack
+
+- **Framework:** Next.js 14+ (App Router)
+- **React:** 18+
+- **TypeScript:** 5.x
+- **Styling:** Tailwind CSS 3.x
+- **Component Library:** shadcn/ui
+
+### 4. Accessibility Requirements
+
+- **WCAG 2.1 AA compliance:** Minimum standard for all components
+- **Keyboard navigation:** Full functionality without mouse
+- **Screen reader support:** Semantic HTML, ARIA labels, live regions
+- **Color contrast:** Minimum ratios as defined in Section 8.4
+
+### 5. Responsive Design
+
+- **Mobile-first approach:** Design for mobile, enhance for desktop
+- **Breakpoints:** As defined in Section 7.1
+- **Touch targets:** Minimum 44px × 44px (Section 7.2)
+
+### 6. File Structure
+
+All UI code must follow the file structure defined in Section 12.2:
+```
+ui/web/
+├── app/                    # Next.js App Router
+├── components/             # React components
+│   ├── ui/                # shadcn/ui components
+│   ├── layout/            # Layout components
+│   ├── jobs/              # Feature components
+│   └── shared/            # Shared components
+├── lib/                   # Utilities
+├── types/                 # TypeScript types
+└── styles/                # Global styles
+```
+
+## Story Creation Requirements
+
+When creating user stories that involve UI work:
+
+1. **Reference the UI spec:** Include a note in the story referencing `docs/ui-implementation-spec.md`
+2. **Specify components:** Use component names from Section 11 (Component Specifications)
+3. **Include accessibility:** Always include accessibility acceptance criteria (AC: 10 in existing stories)
+4. **Include responsive design:** Always include responsive design acceptance criteria (AC: 11 in existing stories)
+
+## Implementation Checklist
+
+Before marking any UI task as complete, verify:
+- [ ] Colors match the UI spec palette (Section 2.1)
+- [ ] Typography follows the type scale (Section 2.2)
+- [ ] Spacing uses the 4px base unit system (Section 2.3)
+- [ ] Components use shadcn/ui when available (Section 2.6)
+- [ ] Accessibility requirements met (Section 8)
+- [ ] Responsive design implemented (Section 7)
+- [ ] File structure follows Section 12.2
+- [ ] Component structure follows Section 12.3
+
+## Enforcement
+
+- **PM Agent:** Must reference UI spec when creating UI-related stories
+- **Dev Agent:** Must verify UI spec compliance before completing UI tasks
+- **QA Agent:** Must test against UI spec requirements
+- **UX Expert Agent:** Must ensure designs align with UI spec
+
+## Updates
+
+If the UI spec is updated, this rule should be reviewed and updated accordingly.
+
+---
+
+**Last Updated:** 2025-01-XX  
+**Related Document:** `docs/ui-implementation-spec.md`
