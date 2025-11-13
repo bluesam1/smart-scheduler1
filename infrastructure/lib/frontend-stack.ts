@@ -157,16 +157,15 @@ export class FrontendStack extends cdk.Stack {
         NODE_ENV: 'production',
         NODE_OPTIONS: '--max-old-space-size=4096',
       },
-      customRules: [
-        // Next.js catch-all for client-side routing
-        // Note: API calls are made directly from the frontend using NEXT_PUBLIC_API_URL
-        // No need to proxy API calls through Amplify
-        {
-          source: '/<*>',
-          target: '/index.html',
-          status: amplify.RedirectStatus.REWRITE,
-        },
-      ],
+      // Custom rules are now defined in amplify.yml for GitHub deployments
+      // Only add customRules if not using GitHub (manual deployments)
+      // customRules: [
+      //   {
+      //     source: '/<*>',
+      //     target: '/index.html',
+      //     status: amplify.RedirectStatus.REWRITE,
+      //   },
+      // ],
     });
     cdk.Tags.of(this.app).add('Project', 'SmartScheduler');
     cdk.Tags.of(this.app).add('Environment', 'production');
