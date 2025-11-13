@@ -4,10 +4,13 @@ frontend:
     preBuild:
       commands:
         - cd frontend
+        # Install all dependencies (npm ci includes devDependencies by default)
         - npm ci
-        # Rebuild native modules for Linux (Tailwind CSS v4)
-        - npm rebuild lightningcss @tailwindcss/oxide || true
-        - npm install @tailwindcss/oxide lightningcss --force || true
+        # Ensure Tailwind CSS v4 dependencies are installed
+        - npm install @tailwindcss/postcss tailwindcss postcss --save-dev
+        # Rebuild native modules for Linux (Tailwind CSS v4 requires native bindings)
+        - npm rebuild @tailwindcss/oxide || true
+        - npm install @tailwindcss/oxide --force || true
     build:
       commands:
         - npm run build
