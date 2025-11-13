@@ -4,10 +4,14 @@ frontend:
     preBuild:
       commands:
         - cd frontend
+        # Remove pnpm-lock.yaml if present (we use npm)
+        - rm -f pnpm-lock.yaml || true
         # Install all dependencies (npm ci includes devDependencies by default)
         - npm ci
-        # Ensure @tailwindcss/postcss is available (moved to dependencies for build)
-        - npm install @tailwindcss/postcss --save || true
+        # Ensure TypeScript and build dependencies are available
+        - npm install typescript @types/node @types/react @types/react-dom --save || true
+        # Ensure @tailwindcss/postcss is available
+        - npm install @tailwindcss/postcss tw-animate-css --save || true
         # Rebuild native modules for Linux (Tailwind CSS v4 requires native bindings)
         - npm rebuild @tailwindcss/oxide || npm install @tailwindcss/oxide --force || true
     build:
