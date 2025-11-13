@@ -1,0 +1,59 @@
+schema: 1
+story: "2.3"
+story_title: "Connect Job UI to API"
+gate: CONCERNS
+status_reason: "Frontend integration complete but missing E2E tests and Google Places frontend integration is deferred with unclear ownership."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-XXT00:00:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "TEST-001"
+    severity: medium
+    finding: "Missing E2E tests for job creation flow (frontend → API → database)"
+    suggested_action: "Add Playwright E2E tests for job CRUD operations"
+    suggested_owner: "dev"
+  - id: "DEP-001"
+    severity: low
+    finding: "SignalR integration depends on Stories FE.2 and 7.6 - need to verify these are complete"
+    suggested_action: "Verify FE.2 and 7.6 are complete before marking 2.3 as done"
+    suggested_owner: "sm"
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 1, low: 1 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - "E2E test coverage"
+      - "SignalR dependency completion"
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 2
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "API calls use proper authentication"
+  performance:
+    status: PASS
+    notes: "Loading states implemented, no performance concerns"
+  reliability:
+    status: CONCERNS
+    notes: "Error handling implemented but not tested via E2E tests"
+  maintainability:
+    status: PASS
+    notes: "TypeScript types match backend DTOs via generated API client"
+
+recommendations:
+  immediate:
+    - action: "Add E2E tests for job creation and list operations"
+      refs: ["frontend/__tests__/e2e/jobs.spec.ts"]
+  future:
+    - action: "Verify SignalR dependencies (FE.2, 7.6) are complete"
+      refs: ["docs/stories/FE.2.implement-signalr-client-connection.md", "docs/stories/7.6.realtime-assignment-updates-signalr.md"]
+

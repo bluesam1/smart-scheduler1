@@ -12,6 +12,7 @@ This document provides an overview of all user stories organized by epic. Storie
 ⏳ **0.4** - Connect Frontend to Backend (Health Check, API Client Setup)  
 ⏳ **0.5** - CI/CD Pipeline Setup  
 ⏳ **0.6** - Database Migrations & Seed Data  
+✅ **0.7** - Cognito Login Frontend Integration  
 
 ## Epic 1: Contractor Profiles (CRUD + Skills/Calendars)
 

@@ -1,0 +1,40 @@
+schema: 1
+story: "8.3"
+story_title: "Cancel Job API"
+gate: PASS
+status_reason: "Cancel functionality properly implemented with validation, proper status management, and event publishing. All tests passing."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-12T23:30:00Z"
+
+waiver: { active: false }
+top_issues: []
+
+evidence:
+  tests_reviewed: 5
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Authorization handled via RequireAuthorization policy"
+  performance:
+    status: PASS
+    notes: "Efficient cancellation logic, async consistency checks"
+  reliability:
+    status: PASS
+    notes: "Proper validation prevents cancelling completed jobs, comprehensive error handling"
+  maintainability:
+    status: PASS
+    notes: "Clean implementation, follows domain-driven design patterns"
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Consider adding audit logging for job cancellations"
+      refs: []
+    - action: "Consider adding API integration tests"
+      refs: ["src/SmartScheduler.Api/Endpoints/Jobs/JobEndpoints.cs"]
+

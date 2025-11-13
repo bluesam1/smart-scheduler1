@@ -1,0 +1,165 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  NODE_VERSION: '20.x'
+
+jobs:
+  backend-build-and-test:
+    name: Backend Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore src/SmartScheduler.sln
+
+      - name: Build solution
+        run: dotnet build src/SmartScheduler.sln --no-restore --configuration Release
+
+      - name: Run unit tests
+        run: dotnet test src/SmartScheduler.sln --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --results-directory:"${{ runner.temp }}/test-results"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: ${{ runner.temp }}/test-results
+          retention-days: 30
+
+      - name: Generate OpenAPI spec
+        run: |
+          dotnet build src/SmartScheduler.Api/SmartScheduler.Api.csproj --configuration Release --no-restore
+          dotnet build src/SmartScheduler.Api/SmartScheduler.Api.csproj --configuration Release /t:NSwag /p:GenerateApiClient=true
+
+      - name: Upload OpenAPI spec
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: openapi-spec
+          path: openapi.json
+          retention-days: 7
+
+  frontend-build-and-test:
+    name: Frontend Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build Next.js application
+        working-directory: frontend
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:5004' }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-build
+          path: frontend/.next
+          retention-days: 7
+
+  api-client-generation:
+    name: Generate API Client
+    runs-on: ubuntu-latest
+    needs: backend-build-and-test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Download OpenAPI spec
+        uses: actions/download-artifact@v4
+        with:
+          name: openapi-spec
+          path: .
+
+      - name: Generate TypeScript API client
+        run: |
+          dotnet build src/SmartScheduler.Api/SmartScheduler.Api.csproj --configuration Release
+          dotnet build src/SmartScheduler.Api/SmartScheduler.Api.csproj --configuration Release /t:NSwag /p:GenerateApiClient=true
+
+      - name: Check for API client changes
+        id: check-changes
+        run: |
+          if [ -n "$(git status --porcelain frontend/lib/api/generated/api-client.ts)" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit API client changes
+        if: steps.check-changes.outputs.changed == 'true' && github.event_name == 'push'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add frontend/lib/api/generated/api-client.ts
+          git commit -m "chore: regenerate API client from OpenAPI spec [skip ci]" || exit 0
+          git push || exit 0
+
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Run .NET code analysis
+        run: |
+          dotnet build src/SmartScheduler.sln --configuration Release --verbosity minimal
+          # Add additional analyzers here if needed
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Run ESLint with detailed output
+        working-directory: frontend
+        run: npm run lint -- --max-warnings=0 || true
+

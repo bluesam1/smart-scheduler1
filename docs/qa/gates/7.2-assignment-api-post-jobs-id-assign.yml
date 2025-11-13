@@ -1,0 +1,69 @@
+schema: 1
+story: "7.2"
+story_title: "Assignment API (POST /jobs/{id}/assign)"
+gate: CONCERNS
+status_reason: "Core functionality implemented correctly with good error handling, but missing integration tests and transaction management concerns."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-27T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "TEST-001"
+    severity: medium
+    finding: "No integration tests for assignment API endpoint"
+    suggested_action: "Add integration tests covering success path, conflict scenarios, and error cases"
+    suggested_owner: "dev"
+  - id: "ARCH-001"
+    severity: medium
+    finding: "Multiple database operations without explicit transaction - potential race condition"
+    suggested_action: "Wrap assignment creation and job update in database transaction"
+    suggested_owner: "dev"
+  - id: "API-001"
+    severity: low
+    finding: "API client not regenerated - using direct fetch instead of generated client"
+    suggested_action: "Regenerate API client to include assign endpoint for type safety"
+    suggested_owner: "dev"
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 2, low: 1 }
+  recommendations:
+    must_fix:
+      - "Add integration tests before production deployment"
+    monitor:
+      - "Transaction management for concurrent assignments"
+      - "API client generation workflow"
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 3
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    ac_gaps: [10]  # OpenAPI documentation - endpoint exists but may need verification
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Authorization properly implemented via group policies"
+  performance:
+    status: CONCERNS
+    notes: "Multiple sequential database calls could be optimized with transaction"
+  reliability:
+    status: CONCERNS
+    notes: "Race condition possible between availability check and assignment creation"
+  maintainability:
+    status: PASS
+    notes: "Clean CQRS pattern with MediatR, well-structured handler"
+
+recommendations:
+  immediate:
+    - action: "Add integration tests for POST /api/jobs/{id}/assign endpoint"
+      refs: ["src/SmartScheduler.Api.Tests/"]
+    - action: "Wrap assignment creation in database transaction"
+      refs: ["src/SmartScheduler.Application/Contracts/Handlers/AssignJobCommandHandler.cs:103-115"]
+  future:
+    - action: "Regenerate API client to include assign endpoint"
+      refs: ["frontend/lib/api/generated/api-client.ts"]
+    - action: "Consider optimistic concurrency control for job updates"
+      refs: ["src/SmartScheduler.Domain/Contracts/Entities/Job.cs"]
+

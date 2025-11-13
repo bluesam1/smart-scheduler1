@@ -1,0 +1,64 @@
+{
+  "vpc-provider:account=971422717446:filter.isDefault=true:region=us-east-2:returnAsymmetricSubnets=true": {
+    "vpcId": "vpc-07c7f6104ea4eeb60",
+    "vpcCidrBlock": "172.31.0.0/16",
+    "ownerAccountId": "971422717446",
+    "availabilityZones": [],
+    "subnetGroups": [
+      {
+        "name": "Public",
+        "type": "Public",
+        "subnets": [
+          {
+            "subnetId": "subnet-03595b890b049b697",
+            "cidr": "172.31.0.0/20",
+            "availabilityZone": "us-east-2a",
+            "routeTableId": "rtb-07fc340347e240270"
+          },
+          {
+            "subnetId": "subnet-05a3ecc69cc888d22",
+            "cidr": "172.31.100.0/24",
+            "availabilityZone": "us-east-2a",
+            "routeTableId": "rtb-00dd1360f0e2611fe"
+          },
+          {
+            "subnetId": "subnet-0db85a5a039387dae",
+            "cidr": "172.31.101.0/24",
+            "availabilityZone": "us-east-2b",
+            "routeTableId": "rtb-00dd1360f0e2611fe"
+          },
+          {
+            "subnetId": "subnet-03260fcd9c243f7b8",
+            "cidr": "172.31.16.0/20",
+            "availabilityZone": "us-east-2b",
+            "routeTableId": "rtb-07fc340347e240270"
+          },
+          {
+            "subnetId": "subnet-068fcd2e51c94a130",
+            "cidr": "172.31.32.0/20",
+            "availabilityZone": "us-east-2c",
+            "routeTableId": "rtb-07fc340347e240270"
+          }
+        ]
+      },
+      {
+        "name": "Private",
+        "type": "Private",
+        "subnets": [
+          {
+            "subnetId": "subnet-08455fb9bf0ea82e6",
+            "cidr": "172.31.200.0/24",
+            "availabilityZone": "us-east-2a",
+            "routeTableId": "rtb-0d5cea1367d8adc7b"
+          },
+          {
+            "subnetId": "subnet-0df6edfa966cbed80",
+            "cidr": "172.31.201.0/24",
+            "availabilityZone": "us-east-2b",
+            "routeTableId": "rtb-0a6379604cb111ae0"
+          }
+        ]
+      }
+    ]
+  }
+}

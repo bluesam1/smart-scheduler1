@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Plus, Search, ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,56 +9,64 @@ import { Badge } from "@/components/ui/badge"
 import { AddContractorDialog } from "./add-contractor-dialog"
 import { ContractorDetailsDialog } from "./contractor-details-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-const mockContractors = [
-  {
-    id: "1",
-    name: "John Martinez",
-    skills: ["Hardwood Installation", "Laminate", "Tile"],
-    rating: 92,
-    availability: "Available",
-    baseLocation: "Downtown District",
-    city: "New York",
-    state: "NY",
-    jobsToday: 2,
-    maxJobs: 4,
-    timezone: "America/New_York",
-  },
-  {
-    id: "2",
-    name: "Sarah Chen",
-    skills: ["Carpet Installation", "Vinyl", "Hardwood"],
-    rating: 88,
-    availability: "Busy",
-    baseLocation: "North Side",
-    city: "New York",
-    state: "NY",
-    jobsToday: 3,
-    maxJobs: 4,
-    timezone: "America/New_York",
-  },
-  {
-    id: "3",
-    name: "Mike Johnson",
-    skills: ["Tile", "Stone", "Marble"],
-    rating: 95,
-    availability: "Available",
-    baseLocation: "West End",
-    city: "Brooklyn",
-    state: "NY",
-    jobsToday: 1,
-    maxJobs: 4,
-    timezone: "America/New_York",
-  },
-]
+import { createApiClients } from "@/lib/api/api-client-config"
+import { useAuth } from "@/lib/auth/auth-context"
+import { formatErrorForDisplay, isAuthenticationError } from "@/lib/api/error-handling"
+import { toast } from "sonner"
+import { Spinner } from "@/components/ui/spinner"
+import type { ContractorDto } from "@/lib/api/generated/api-client"
 
 export function ContractorsTable() {
+  const { getTokenProvider } = useAuth()
+  const [contractors, setContractors] = useState<ContractorDto[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [availabilityFilter, setAvailabilityFilter] = useState("all")
   const [sortField, setSortField] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [selectedContractor, setSelectedContractor] = useState<(typeof mockContractors)[0] | null>(null)
+  const [selectedContractor, setSelectedContractor] = useState<ContractorDto | null>(null)
+
+  const fetchContractors = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      const tokenProvider = getTokenProvider()
+      if (!tokenProvider) {
+        toast.error("Please log in to view contractors")
+        setIsLoading(false)
+        return
+      }
+      const { client } = createApiClients(tokenProvider)
+      const data = await client.getContractors(null, null)
+      console.log("[ContractorsTable] Fetched contractors:", data)
+      console.log("[ContractorsTable] Number of contractors:", data?.length || 0)
+      setContractors(data || [])
+    } catch (err) {
+      console.error("[ContractorsTable] Error fetching contractors:", err)
+      const errorMessage = formatErrorForDisplay(err)
+      setError(errorMessage)
+      
+      if (isAuthenticationError(err)) {
+        toast.error("Please log in to view contractors")
+      } else {
+        toast.error(`Failed to load contractors: ${errorMessage}`)
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }, [getTokenProvider])
+
+  useEffect(() => {
+    fetchContractors()
+  }, [fetchContractors])
+
+  const handleContractorAdded = () => {
+    // Refresh the list after adding a contractor
+    fetchContractors()
+  }
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -69,22 +77,77 @@ export function ContractorsTable() {
     }
   }
 
-  let filteredContractors = mockContractors.filter((contractor) => {
+  // Filter contractors based on search query and availability
+  let filteredContractors = contractors.filter((contractor) => {
     const matchesSearch =
-      contractor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contractor.skills.some((skill) => skill.toLowerCase().includes(searchQuery.toLowerCase()))
-    const matchesAvailability = availabilityFilter === "all" || contractor.availability === availabilityFilter
+      !searchQuery.trim() ||
+      contractor.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      contractor.skills?.some((skill) => skill.toLowerCase().includes(searchQuery.toLowerCase()))
+    
+    // Note: Availability filtering would need to be calculated based on working hours and calendar
+    // For now, we'll skip availability filtering as it requires more complex logic
+    const matchesAvailability = availabilityFilter === "all" // TODO: Implement availability calculation
+    
     return matchesSearch && matchesAvailability
   })
 
+  // Debug logging
+  useEffect(() => {
+    console.log("[ContractorsTable] contractors state:", contractors)
+    console.log("[ContractorsTable] filteredContractors:", filteredContractors)
+  }, [contractors, filteredContractors])
+
+  // Sort contractors
   if (sortField) {
     filteredContractors = [...filteredContractors].sort((a, b) => {
-      const aVal = a[sortField as keyof typeof a]
-      const bVal = b[sortField as keyof typeof b]
+      let aVal: any
+      let bVal: any
+      
+      switch (sortField) {
+        case "name":
+          aVal = a.name || ""
+          bVal = b.name || ""
+          break
+        case "rating":
+          aVal = a.rating || 0
+          bVal = b.rating || 0
+          break
+        case "city":
+          aVal = a.baseLocation?.city || ""
+          bVal = b.baseLocation?.city || ""
+          break
+        case "state":
+          aVal = a.baseLocation?.state || ""
+          bVal = b.baseLocation?.state || ""
+          break
+        default:
+          return 0
+      }
+      
       if (aVal < bVal) return sortDirection === "asc" ? -1 : 1
       if (aVal > bVal) return sortDirection === "asc" ? 1 : -1
       return 0
     })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-12">
+        <Spinner className="h-8 w-8" />
+        <p className="text-sm text-muted-foreground">Loading contractors...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-12">
+        <p className="text-sm text-destructive">{error}</p>
+        <Button onClick={fetchContractors} variant="outline">
+          Retry
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -157,55 +220,89 @@ export function ContractorsTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredContractors.map((contractor) => (
-              <TableRow
-                key={contractor.id}
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => setSelectedContractor(contractor)}
-              >
-                <TableCell className="font-medium">{contractor.name}</TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {contractor.skills.slice(0, 2).map((skill) => (
-                      <Badge key={skill} variant="secondary" className="text-xs">
-                        {skill}
-                      </Badge>
-                    ))}
-                    {contractor.skills.length > 2 && (
-                      <Badge variant="secondary" className="text-xs">
-                        +{contractor.skills.length - 2}
-                      </Badge>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className="text-sm font-medium">{contractor.rating}/100</div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={contractor.availability === "Available" ? "default" : "secondary"}>
-                    {contractor.availability}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">{contractor.city}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{contractor.state}</TableCell>
-                <TableCell>
-                  {contractor.jobsToday}/{contractor.maxJobs}
+            {filteredContractors.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  {searchQuery ? "No contractors match your search." : "No contractors found."}
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              filteredContractors.map((contractor) => {
+                console.log("[ContractorsTable] Rendering contractor:", contractor)
+                return (
+                  <TableRow
+                    key={contractor.id || `contractor-${Math.random()}`}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setSelectedContractor(contractor)}
+                  >
+                    <TableCell className="font-medium">{contractor.name || "Unknown"}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {contractor.skills && contractor.skills.length > 0 ? (
+                          <>
+                            {contractor.skills.slice(0, 2).map((skill) => (
+                              <Badge key={skill} variant="secondary" className="text-xs">
+                                {skill}
+                              </Badge>
+                            ))}
+                            {contractor.skills.length > 2 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{contractor.skills.length - 2}
+                              </Badge>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No skills</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm font-medium">{contractor.rating || 0}/100</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {/* TODO: Calculate availability based on working hours and calendar */}
+                        N/A
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {contractor.baseLocation?.city || "-"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {contractor.baseLocation?.state || "-"}
+                    </TableCell>
+                    <TableCell>
+                      {/* TODO: Calculate utilization based on jobs */}
+                      -
+                    </TableCell>
+                  </TableRow>
+                )
+              })
+            )}
           </TableBody>
         </Table>
       </div>
 
-      <AddContractorDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
+      <AddContractorDialog 
+        open={isAddDialogOpen} 
+        onOpenChange={setIsAddDialogOpen}
+        onContractorAdded={handleContractorAdded}
+      />
 
       {selectedContractor && (
         <ContractorDetailsDialog
           contractor={selectedContractor}
           open={!!selectedContractor}
-          onOpenChange={(open) => !open && setSelectedContractor(null)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedContractor(null)
+              // Refresh the table when dialog closes to show any updates
+              fetchContractors()
+            }
+          }}
+          onContractorUpdated={fetchContractors}
         />
       )}
     </div>

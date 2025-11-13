@@ -1,0 +1,61 @@
+schema: 1
+story: "1.4"
+story_title: "Working Hours & Calendar Management"
+gate: CONCERNS
+status_reason: "Implementation is solid with proper validation and frontend integration. Missing tests."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-27T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "TEST-001"
+    severity: medium
+    finding: "Missing integration tests for calendar management endpoints"
+    suggested_action: "Add integration tests for working hours and calendar exception endpoints"
+    suggested_owner: "dev"
+  - id: "TEST-002"
+    severity: medium
+    finding: "Missing handler unit tests"
+    suggested_action: "Add unit tests for calendar command handlers"
+    suggested_owner: "dev"
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 2, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - "Add tests when test infrastructure is ready"
+
+quality_score: 80
+expires: "2025-02-10T00:00:00Z"
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 2
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Authorization properly applied."
+  performance:
+    status: PASS
+    notes: "No performance concerns."
+  reliability:
+    status: CONCERNS
+    notes: "Cannot verify reliability without tests."
+  maintainability:
+    status: PASS
+    notes: "Clean implementation following established patterns."
+
+recommendations:
+  immediate:
+    - action: "Add integration tests for calendar endpoints"
+      refs: ["src/SmartScheduler.Api/Endpoints/Contractors/ContractorEndpoints.cs"]
+    - action: "Add handler unit tests"
+      refs: ["src/SmartScheduler.Application/Contracts/Handlers/"]
+  future: []
+

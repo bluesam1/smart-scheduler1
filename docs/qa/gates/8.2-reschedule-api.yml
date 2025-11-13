@@ -1,0 +1,40 @@
+schema: 1
+story: "8.2"
+story_title: "Reschedule API"
+gate: PASS
+status_reason: "API endpoint properly implemented with correct HTTP methods, error handling, and OpenAPI documentation. All acceptance criteria met."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-12T23:30:00Z"
+
+waiver: { active: false }
+top_issues: []
+
+evidence:
+  tests_reviewed: 7
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Authorization handled via RequireAuthorization policy on endpoint group"
+  performance:
+    status: PASS
+    notes: "Endpoint delegates to handler which is optimized"
+  reliability:
+    status: PASS
+    notes: "Proper error handling for 400, 404, 409 status codes"
+  maintainability:
+    status: PASS
+    notes: "Clean endpoint implementation, follows existing patterns"
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Consider adding API integration tests in SmartScheduler.Api.Tests"
+      refs: ["src/SmartScheduler.Api/Endpoints/Jobs/JobEndpoints.cs"]
+    - action: "Consider adding rate limiting for reschedule endpoint"
+      refs: []
+

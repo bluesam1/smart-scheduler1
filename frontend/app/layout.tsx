@@ -4,7 +4,10 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { SettingsProvider } from "@/lib/settings-context"
+import { AuthProvider } from "@/lib/auth/auth-context"
+import { SignalRProvider } from "@/lib/realtime/signalr-context"
 import { Toaster } from "@/components/ui/toaster"
+import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -40,10 +43,15 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`font-sans antialiased`}>
-        <SettingsProvider>
-          {children}
-          <Toaster />
-        </SettingsProvider>
+        <AuthProvider>
+          <SignalRProvider dispatcherRegion="Default" autoConnect={true}>
+            <SettingsProvider>
+              {children}
+              <Toaster />
+              <SonnerToaster />
+            </SettingsProvider>
+          </SignalRProvider>
+        </AuthProvider>
         <Analytics />
       </body>
     </html>

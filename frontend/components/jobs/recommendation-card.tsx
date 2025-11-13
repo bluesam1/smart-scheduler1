@@ -9,6 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { MapPin, Star, Clock, TrendingUp, Info, Wrench } from "lucide-react"
 import { useState } from "react"
 import { SmartCalendarScheduler } from "./smart-calendar-scheduler"
+import { ContractorDetailsDialog } from "@/components/contractors/contractor-details-dialog"
+import { createApiClients } from "@/lib/api/api-client-config"
+import { useAuth } from "@/lib/auth/auth-context"
+import { toast } from "sonner"
+import type { ContractorDto } from "@/lib/api/generated/api-client"
 
 interface RecommendationCardProps {
   recommendation: {
@@ -34,13 +39,19 @@ interface RecommendationCardProps {
     currentUtilization: number
     jobsToday: number
     skills?: string[]
+    isAssigning?: boolean
+    isAssigned?: boolean
   }
   rank: number
   onAssign: (contractorId: string, slotTime: string) => void
+  jobDuration?: number
 }
 
-export function RecommendationCard({ recommendation, rank, onAssign }: RecommendationCardProps) {
+export function RecommendationCard({ recommendation, rank, onAssign, jobDuration = 2 }: RecommendationCardProps) {
+  const { getTokenProvider } = useAuth()
   const [showScheduler, setShowScheduler] = useState(false)
+  const [selectedContractor, setSelectedContractor] = useState<ContractorDto | null>(null)
+  const [isLoadingContractor, setIsLoadingContractor] = useState(false)
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return "text-chart-3"
@@ -61,9 +72,26 @@ export function RecommendationCard({ recommendation, rank, onAssign }: Recommend
     onAssign(recommendation.contractorId, JSON.stringify(sessions))
   }
 
-  const handleContractorClick = () => {
+  const handleContractorClick = async () => {
     console.log("[v0] Opening contractor details for:", recommendation.contractorId)
-    // TODO: Open contractor details dialog
+    
+    setIsLoadingContractor(true)
+    try {
+      const tokenProvider = getTokenProvider()
+      if (!tokenProvider) {
+        toast.error("Please log in to view contractor details")
+        return
+      }
+
+      const { client } = createApiClients(tokenProvider)
+      const contractor = await client.getContractor(recommendation.contractorId)
+      setSelectedContractor(contractor)
+    } catch (error) {
+      console.error("Failed to fetch contractor details:", error)
+      toast.error("Failed to load contractor details")
+    } finally {
+      setIsLoadingContractor(false)
+    }
   }
 
   const getRecommendedTimeDisplay = () => {
@@ -122,9 +150,10 @@ export function RecommendationCard({ recommendation, rank, onAssign }: Recommend
               <div className="flex-1">
                 <button
                   onClick={handleContractorClick}
-                  className="font-semibold text-balance hover:text-primary transition-colors text-left"
+                  disabled={isLoadingContractor}
+                  className="font-semibold text-balance hover:text-primary transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {recommendation.contractorName}
+                  {isLoadingContractor ? "Loading..." : recommendation.contractorName}
                 </button>
                 <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
                   <MapPin className="h-3 w-3" />
@@ -264,8 +293,16 @@ export function RecommendationCard({ recommendation, rank, onAssign }: Recommend
             </button>
           </div>
 
-          <Button className="w-full" onClick={() => setShowScheduler(true)}>
-            Schedule with {recommendation.contractorName}
+          <Button 
+            className="w-full" 
+            onClick={() => setShowScheduler(true)}
+            disabled={recommendation.isAssigning || recommendation.isAssigned}
+          >
+            {recommendation.isAssigning 
+              ? "Assigning..." 
+              : recommendation.isAssigned 
+                ? "Assigned" 
+                : `Schedule with ${recommendation.contractorName}`}
           </Button>
         </CardContent>
       </Card>
@@ -278,13 +315,25 @@ export function RecommendationCard({ recommendation, rank, onAssign }: Recommend
           <SmartCalendarScheduler
             contractorId={recommendation.contractorId}
             contractorName={recommendation.contractorName}
-            jobDuration={2}
+            jobDuration={jobDuration}
             selectedDate={new Date().toISOString().split("T")[0]}
             onSchedule={handleSchedule}
             onCancel={() => setShowScheduler(false)}
           />
         </DialogContent>
       </Dialog>
+
+      {selectedContractor && (
+        <ContractorDetailsDialog
+          contractor={selectedContractor}
+          open={!!selectedContractor}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedContractor(null)
+            }
+          }}
+        />
+      )}
     </>
   )
 }

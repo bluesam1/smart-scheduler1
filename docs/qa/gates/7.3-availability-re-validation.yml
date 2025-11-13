@@ -1,0 +1,69 @@
+schema: 1
+story: "7.3"
+story_title: "Availability Re-validation"
+gate: CONCERNS
+status_reason: "Comprehensive re-validation logic implemented using availability engine, but missing unit tests and monitoring as noted in story."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-27T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "TEST-001"
+    severity: high
+    finding: "No unit tests for AvailabilityRevalidator - critical business logic untested"
+    suggested_action: "Add comprehensive unit tests covering all validation scenarios"
+    suggested_owner: "dev"
+  - id: "TEST-002"
+    severity: medium
+    finding: "No integration tests for re-validation in assignment flow"
+    suggested_action: "Add integration tests verifying re-validation prevents conflicts"
+    suggested_owner: "dev"
+  - id: "MON-001"
+    severity: low
+    finding: "Monitoring deferred - re-validation failures not tracked"
+    suggested_action: "Add logging/metrics for re-validation failures and conflict rates"
+    suggested_owner: "dev"
+
+risk_summary:
+  totals: { critical: 0, high: 1, medium: 1, low: 1 }
+  recommendations:
+    must_fix:
+      - "Add unit tests for AvailabilityRevalidator before production"
+    monitor:
+      - "Re-validation failure rates"
+      - "Conflict detection accuracy"
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 3
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7]
+    ac_gaps: [8, 9, 10]  # Testing, Documentation, Monitoring
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "No security concerns"
+  performance:
+    status: CONCERNS
+    notes: "Re-validation queries all contractor assignments - could be optimized with time-range query"
+  reliability:
+    status: CONCERNS
+    notes: "Complex validation logic without tests increases risk of bugs"
+  maintainability:
+    status: PASS
+    notes: "Well-structured service using existing availability engine"
+
+recommendations:
+  immediate:
+    - action: "Add unit tests for AvailabilityRevalidator covering all validation scenarios"
+      refs: ["src/SmartScheduler.Application.Tests/Contracts/Services/AvailabilityRevalidatorTests.cs"]
+    - action: "Optimize assignment query to use time-range filter instead of loading all assignments"
+      refs: ["src/SmartScheduler.Application/Contracts/Services/AvailabilityRevalidator.cs:55"]
+  future:
+    - action: "Add monitoring/logging for re-validation metrics"
+      refs: ["src/SmartScheduler.Application/Contracts/Services/AvailabilityRevalidator.cs"]
+    - action: "Consider caching contractor working hours for performance"
+      refs: ["src/SmartScheduler.Application/Contracts/Services/AvailabilityRevalidator.cs:40"]
+

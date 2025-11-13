@@ -14,34 +14,39 @@ import { ExceptionsManager } from "./exceptions-manager"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useSettings } from "@/lib/settings-context"
 import { SkillCombobox } from "@/components/ui/skill-combobox"
+import { createApiClients } from "@/lib/api/api-client-config"
+import { useAuth } from "@/lib/auth/auth-context"
+import { formatErrorForDisplay, isAuthenticationError } from "@/lib/api/error-handling"
+import { toast } from "sonner"
+import { Spinner } from "@/components/ui/spinner"
+import { GooglePlacesAutocomplete, type PlaceResult } from "@/components/ui/google-places-autocomplete"
+import type { ContractorDto, UpdateContractorRequest, GeoLocationDto } from "@/lib/api/generated/api-client"
+import { estimateTimezoneFromCoordinates } from "@/lib/timezone-utils"
 
 interface ContractorDetailsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  contractor: {
-    id: string
-    name: string
-    skills: string[]
-    rating: number
-    availability: string
-    baseLocation: string
-    timezone?: string
-  }
+  contractor: ContractorDto
+  onContractorUpdated?: () => void
 }
 
-export function ContractorDetailsDialog({ open, onOpenChange, contractor }: ContractorDetailsDialogProps) {
+export function ContractorDetailsDialog({ open, onOpenChange, contractor, onContractorUpdated }: ContractorDetailsDialogProps) {
   const { skills: availableSkills } = useSettings()
+  const { getTokenProvider } = useAuth()
   const [activeTab, setActiveTab] = useState("details")
-  const [editedAddress, setEditedAddress] = useState(contractor.baseLocation)
+  const [editedAddress, setEditedAddress] = useState(contractor.baseLocation?.formattedAddress || contractor.baseLocation?.address || "")
   const [editedTimezone, setEditedTimezone] = useState(contractor.timezone || "America/New_York")
-  const [editedSkills, setEditedSkills] = useState<string[]>(contractor.skills)
+  const [editedSkills, setEditedSkills] = useState<string[]>(contractor.skills || [])
   const [newSkill, setNewSkill] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
+  const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(null)
 
   useEffect(() => {
     if (open) {
-      setEditedAddress(contractor.baseLocation)
+      setEditedAddress(contractor.baseLocation?.formattedAddress || contractor.baseLocation?.address || "")
       setEditedTimezone(contractor.timezone || "America/New_York")
-      setEditedSkills(contractor.skills)
+      setEditedSkills(contractor.skills || [])
+      setSelectedPlace(null) // Reset selected place when dialog opens
       setActiveTab("details")
     }
   }, [open, contractor])
@@ -57,18 +62,110 @@ export function ContractorDetailsDialog({ open, onOpenChange, contractor }: Cont
     setEditedSkills(editedSkills.filter((s) => s !== skill))
   }
 
-  const handleSaveDetails = () => {
-    console.log("[v0] Saving contractor details:", {
-      address: editedAddress,
-      timezone: editedTimezone,
-      skills: editedSkills,
-    })
-    // TODO: In production, make API call to save changes
-    onOpenChange(false)
+  const handleSaveDetails = async () => {
+    if (!contractor.id) {
+      toast.error("Contractor ID is missing")
+      return
+    }
+
+    setIsSaving(true)
+
+    try {
+      const tokenProvider = getTokenProvider()
+      if (!tokenProvider) {
+        toast.error("Please log in to update contractors")
+        setIsSaving(false)
+        return
+      }
+      const { client } = createApiClients(tokenProvider)
+
+      // Prepare base location update - use new coordinates if place was selected, otherwise preserve existing
+      let baseLocation: GeoLocationDto | undefined
+      const originalAddress = contractor.baseLocation?.formattedAddress || contractor.baseLocation?.address || ""
+      if (editedAddress !== originalAddress && editedAddress.trim()) {
+        // If a place was selected, use its coordinates; otherwise preserve existing coordinates
+        if (selectedPlace) {
+          baseLocation = {
+            latitude: selectedPlace.latitude,
+            longitude: selectedPlace.longitude,
+            address: selectedPlace.address || undefined,
+            city: selectedPlace.city || undefined,
+            state: selectedPlace.state || undefined,
+            postalCode: selectedPlace.postalCode || undefined,
+            country: selectedPlace.country || undefined,
+            formattedAddress: selectedPlace.formattedAddress || undefined,
+            placeId: selectedPlace.placeId || undefined,
+          } as GeoLocationDto
+        } else {
+          // Preserve existing coordinates and update address fields only
+          baseLocation = {
+            ...(contractor.baseLocation || {}),
+            address: editedAddress || undefined,
+            formattedAddress: editedAddress || undefined,
+          } as GeoLocationDto
+        }
+      }
+
+      // Prepare update request - only include fields that have values
+      const updateRequest: UpdateContractorRequest = {}
+
+      // Check if skills changed (compare sorted arrays)
+      const originalSkills = (contractor.skills || []).slice().sort()
+      const newSkills = editedSkills.slice().sort()
+      const skillsChanged = JSON.stringify(originalSkills) !== JSON.stringify(newSkills)
+      
+      // Include skills if they changed (even if empty array - user cleared all skills)
+      if (skillsChanged) {
+        updateRequest.skills = editedSkills.length > 0 ? editedSkills : []
+      }
+
+      // Only include baseLocation if it changed
+      if (baseLocation) {
+        updateRequest.baseLocation = baseLocation
+      }
+
+      // If nothing changed, show message and return
+      if (Object.keys(updateRequest).length === 0) {
+        toast.info("No changes to save")
+        setIsSaving(false)
+        return
+      }
+
+      // Note: Timezone changes should be handled via working hours update (separate tab)
+      // We don't update timezone here as it's derived from working hours
+
+      await client.updateContractor(contractor.id, updateRequest)
+
+      toast.success("Contractor updated successfully")
+      
+      // Notify parent to refresh the list
+      onContractorUpdated?.()
+      
+      onOpenChange(false)
+    } catch (err) {
+      const errorMessage = formatErrorForDisplay(err)
+      
+      if (isAuthenticationError(err)) {
+        toast.error("Please log in to update contractors")
+      } else {
+        toast.error(`Failed to update contractor: ${errorMessage}`)
+      }
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Handle dialog close - refresh parent if needed
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      // Dialog is closing - refresh parent to show any updates
+      onContractorUpdated?.()
+    }
+    onOpenChange(newOpen)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="!max-w-none !w-[96vw] !h-[92vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <div className="flex items-start justify-between">
@@ -76,7 +173,7 @@ export function ContractorDetailsDialog({ open, onOpenChange, contractor }: Cont
               <DialogTitle className="text-balance">{contractor.name}</DialogTitle>
               <div className="flex items-center gap-2 text-sm text-muted-foreground pt-1">
                 <MapPin className="h-3 w-3" />
-                <span>{contractor.baseLocation}</span>
+                <span>{contractor.baseLocation?.formattedAddress || contractor.baseLocation?.address || "No location"}</span>
                 <span>•</span>
                 <Badge variant="outline" className="text-xs">
                   {contractor.timezone || "America/New_York"}
@@ -139,14 +236,43 @@ export function ContractorDetailsDialog({ open, onOpenChange, contractor }: Cont
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold">Location & Timezone</h3>
                   <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Base Address</Label>
-                      <Input
-                        id="address"
-                        value={editedAddress}
-                        onChange={(e) => setEditedAddress(e.target.value)}
-                        placeholder="Enter contractor address"
-                      />
+                    <GooglePlacesAutocomplete
+                      label="Base Address"
+                      value={editedAddress}
+                      onChange={setEditedAddress}
+                      onPlaceSelect={(place: PlaceResult) => {
+                        setEditedAddress(place.formattedAddress)
+                        setSelectedPlace(place)
+                        // Auto-populate timezone from coordinates
+                        const estimatedTimezone = estimateTimezoneFromCoordinates(place.latitude, place.longitude)
+                        setEditedTimezone(estimatedTimezone)
+                        // The save handler will use the place's coordinates and address components
+                      }}
+                      placeholder="Start typing address..."
+                      disabled={isSaving}
+                      id="address"
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label>Latitude</Label>
+                        <div className="px-3 py-2 text-sm border rounded-md bg-muted/50 text-muted-foreground">
+                          {selectedPlace 
+                            ? selectedPlace.latitude.toFixed(6) 
+                            : contractor.baseLocation?.latitude 
+                              ? contractor.baseLocation.latitude.toFixed(6)
+                              : "Not set"}
+                        </div>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Longitude</Label>
+                        <div className="px-3 py-2 text-sm border rounded-md bg-muted/50 text-muted-foreground">
+                          {selectedPlace 
+                            ? selectedPlace.longitude.toFixed(6) 
+                            : contractor.baseLocation?.longitude 
+                              ? contractor.baseLocation.longitude.toFixed(6)
+                              : "Not set"}
+                        </div>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="timezone">Timezone</Label>
@@ -180,23 +306,30 @@ export function ContractorDetailsDialog({ open, onOpenChange, contractor }: Cont
               </div>
 
               <div className="pt-4 border-t mt-4">
-                <Button onClick={handleSaveDetails} className="w-full">
-                  Save Changes
+                <Button onClick={handleSaveDetails} className="w-full" disabled={isSaving}>
+                  {isSaving ? (
+                    <>
+                      <Spinner className="h-4 w-4 mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
                 </Button>
               </div>
             </div>
           </TabsContent>
 
           <TabsContent value="calendar" className="flex-1 mt-4 pb-6 min-h-0">
-            <CalendarView contractorId={contractor.id} contractorName={contractor.name} />
+            <CalendarView contractorId={contractor.id || ""} contractorName={contractor.name || ""} />
           </TabsContent>
 
           <TabsContent value="schedule" className="flex-1 mt-4 pb-6 min-h-0">
-            <WorkingScheduleSettings contractorId={contractor.id} />
+            <WorkingScheduleSettings contractorId={contractor.id || ""} />
           </TabsContent>
 
           <TabsContent value="exceptions" className="flex-1 mt-4 pb-6 min-h-0">
-            <ExceptionsManager contractorId={contractor.id} />
+            <ExceptionsManager contractorId={contractor.id || ""} />
           </TabsContent>
         </Tabs>
       </DialogContent>

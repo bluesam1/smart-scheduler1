@@ -1,0 +1,66 @@
+schema: 1
+story: "9.5"
+story_title: "Admin Authorization for Settings"
+gate: CONCERNS
+status_reason: "Authorization properly enforced on backend and frontend, but missing tests to verify authorization behavior and potential JWT decoding vulnerability."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-13T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "TEST-001"
+    severity: high
+    finding: "No authorization tests for Settings and Weights endpoints"
+    suggested_action: "Add integration tests verifying 403 responses for non-admin users"
+    suggested_owner: "dev"
+  - id: "SEC-001"
+    severity: medium
+    finding: "Frontend JWT decoding doesn't verify token signature - relies on backend validation"
+    suggested_action: "Document that frontend role check is UX-only and backend is source of truth"
+    suggested_owner: "dev"
+  - id: "TEST-002"
+    severity: medium
+    finding: "No frontend tests for role-based UI hiding"
+    suggested_action: "Add component tests verifying Settings UI is hidden for non-admins"
+    suggested_owner: "dev"
+
+risk_summary:
+  totals: { critical: 0, high: 1, medium: 2, low: 0 }
+  recommendations:
+    must_fix:
+      - "Add authorization tests before production deployment"
+    monitor:
+      - "Frontend role checking behavior"
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 3
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 9, 10]
+    ac_gaps: [8]
+
+nfr_validation:
+  security:
+    status: CONCERNS
+    notes: "Backend authorization properly enforced, but frontend JWT decoding is for UX only - needs documentation"
+  performance:
+    status: PASS
+    notes: "No performance concerns"
+  reliability:
+    status: PASS
+    notes: "Proper error handling for unauthorized access"
+  maintainability:
+    status: PASS
+    notes: "Clean role utility functions, well-structured authorization checks"
+
+recommendations:
+  immediate:
+    - action: "Add authorization integration tests"
+      refs: ["src/SmartScheduler.Api.Tests/Endpoints/Settings/", "src/SmartScheduler.Api.Tests/Endpoints/Admin/Weights/"]
+    - action: "Document that frontend role check is UX-only"
+      refs: ["frontend/lib/auth/role-utils.ts"]
+  future:
+    - action: "Add frontend component tests for role-based UI hiding"
+      refs: ["frontend/__tests__/settings/"]
+

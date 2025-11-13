@@ -1,0 +1,38 @@
+{
+  "name": "smart-scheduler-infrastructure",
+  "version": "0.1.0",
+  "description": "AWS CDK infrastructure for Smart Scheduler production environment",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk",
+    "deploy": "cdk deploy --all",
+    "deploy:database": "cdk deploy SmartScheduler-Database",
+    "deploy:secrets": "cdk deploy SmartScheduler-Secrets",
+    "deploy:storage": "cdk deploy SmartScheduler-Storage",
+    "deploy:api": "cdk deploy SmartScheduler-Api",
+    "deploy:frontend": "cdk deploy SmartScheduler-Frontend",
+    "diff": "cdk diff",
+    "synth": "cdk synth",
+    "destroy:database": "cdk destroy SmartScheduler-Database",
+    "destroy:secrets": "cdk destroy SmartScheduler-Secrets",
+    "destroy:storage": "cdk destroy SmartScheduler-Storage",
+    "destroy:api": "cdk destroy SmartScheduler-Api",
+    "destroy:frontend": "cdk destroy SmartScheduler-Frontend"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "~5.3.0"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.100.0",
+    "@aws-cdk/aws-amplify-alpha": "^2.100.0-alpha.0",
+    "constructs": "^10.3.0",
+    "source-map-support": "^0.5.21"
+  },
+  "peerDependencies": {
+    "aws-cdk": "^2.100.0"
+  }
+}
+

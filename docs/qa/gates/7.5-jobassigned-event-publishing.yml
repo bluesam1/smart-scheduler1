@@ -1,0 +1,66 @@
+schema: 1
+story: "7.5"
+story_title: "JobAssigned Event Publishing"
+gate: CONCERNS
+status_reason: "Event publishing implemented correctly with SignalR, but EventLog persistence deferred and no tests. Publisher error handling is good."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-27T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "TEST-001"
+    severity: medium
+    finding: "No tests for event publishing integration"
+    suggested_action: "Add integration tests verifying JobAssigned events are published"
+    suggested_owner: "dev"
+  - id: "EVENTLOG-001"
+    severity: medium
+    finding: "EventLog persistence deferred - no audit trail for events"
+    suggested_action: "Create EventLog entity and persist events for audit trail"
+    suggested_owner: "dev"
+  - id: "REGION-001"
+    severity: low
+    finding: "Hard-coded 'Default' region - should derive from job location or user context"
+    suggested_action: "Enhance region derivation logic"
+    suggested_owner: "dev"
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 2, low: 1 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - "Event publishing success rates"
+      - "SignalR connection stability"
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 3
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 7, 8, 9]
+    ac_gaps: [6, 10]  # EventLog logging, Testing
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "No security concerns - events are internal"
+  performance:
+    status: PASS
+    notes: "Async publishing doesn't block assignment"
+  reliability:
+    status: PASS
+    notes: "Publisher handles errors gracefully, won't fail assignment"
+  maintainability:
+    status: CONCERNS
+    notes: "Missing EventLog reduces auditability and debugging capability"
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Create EventLog entity and persist JobAssigned events"
+      refs: ["src/SmartScheduler.Domain/Contracts/Entities/EventLog.cs"]
+    - action: "Add integration tests for event publishing"
+      refs: ["src/SmartScheduler.Application.Tests/"]
+    - action: "Derive region from job location or user context instead of hard-coding"
+      refs: ["src/SmartScheduler.Application/Contracts/Handlers/AssignJobCommandHandler.cs:120"]
+

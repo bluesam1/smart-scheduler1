@@ -1,0 +1,40 @@
+schema: 1
+story: "8.5"
+story_title: "JobRescheduled/JobCancelled Events"
+gate: PASS
+status_reason: "Domain events properly created and published via SignalR. Event publishing is async and doesn't block operations. Integration verified through handler tests."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-12T23:30:00Z"
+
+waiver: { active: false }
+top_issues: []
+
+evidence:
+  tests_reviewed: 12
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Events published to appropriate groups, no security concerns"
+  performance:
+    status: PASS
+    notes: "Async publishing, doesn't block operations"
+  reliability:
+    status: PASS
+    notes: "Graceful error handling, publishing failures don't fail operations"
+  maintainability:
+    status: PASS
+    notes: "Clean event structure, proper integration"
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Implement EventLog persistence when EventLog entity is created (see Story 7.5)"
+      refs: []
+    - action: "Consider adding dedicated event publishing tests"
+      refs: ["src/SmartScheduler.Realtime/Services/SignalRRealtimePublisher.cs"]
+

@@ -1,7 +1,10 @@
 # Story FE.2: Implement SignalR Client Connection
 
 ## Status
-Approved
+Ready for Review
+
+## MVP Priority
+**CRITICAL** - Required for MVP (PRD line 27, line 318). Blocks all frontend SignalR integration. Must be completed before Stories 2.3, 6.5, and 7.6.
 
 ## Story
 
@@ -24,34 +27,34 @@ Approved
 
 ## Tasks / Subtasks
 
-- [ ] Install SignalR client
-  - [ ] Install @microsoft/signalr package
-  - [ ] Configure TypeScript types
-- [ ] Create SignalR client service
-  - [ ] Create `SignalRClient` class
-  - [ ] Configure connection
-  - [ ] Handle connection lifecycle
-- [ ] Implement connection management
-  - [ ] Establish connection on app load
-  - [ ] Handle connection state
-  - [ ] Implement reconnection logic
-- [ ] Implement group subscription
-  - [ ] Subscribe to dispatcher groups
-  - [ ] Subscribe to contractor groups
-  - [ ] Handle group membership
-- [ ] Implement event handlers
-  - [ ] Handle RecommendationReady event
-  - [ ] Handle JobAssigned event
-  - [ ] Handle JobRescheduled event
-  - [ ] Handle JobCancelled event
-- [ ] Add error handling
-  - [ ] Handle connection errors
-  - [ ] Handle reconnection failures
-  - [ ] Log errors
-- [ ] Integrate with React
-  - [ ] Create SignalR context/hook
-  - [ ] Use in components
-  - [ ] Handle component lifecycle
+- [x] Install SignalR client
+  - [x] Install @microsoft/signalr package
+  - [x] Configure TypeScript types
+- [x] Create SignalR client service
+  - [x] Create `SignalRClient` class
+  - [x] Configure connection
+  - [x] Handle connection lifecycle
+- [x] Implement connection management
+  - [x] Establish connection on app load
+  - [x] Handle connection state
+  - [x] Implement reconnection logic
+- [x] Implement group subscription
+  - [x] Subscribe to dispatcher groups
+  - [x] Subscribe to contractor groups
+  - [x] Handle group membership
+- [x] Implement event handlers
+  - [x] Handle RecommendationReady event
+  - [x] Handle JobAssigned event
+  - [ ] Handle JobRescheduled event (deferred - not in MVP scope)
+  - [ ] Handle JobCancelled event (deferred - not in MVP scope)
+- [x] Add error handling
+  - [x] Handle connection errors
+  - [x] Handle reconnection failures
+  - [x] Log errors
+- [x] Integrate with React
+  - [x] Create SignalR context/hook
+  - [x] Use in components
+  - [x] Handle component lifecycle
 - [ ] Add connection state display (optional)
   - [ ] Show connection status
   - [ ] Show reconnection status
@@ -91,16 +94,34 @@ Approved
 ## Dev Agent Record
 
 ### Agent Model Used
-_To be populated by dev agent_
+Auto (Claude Sonnet 4.5)
 
 ### Debug Log References
-_To be populated by dev agent_
+N/A
 
 ### Completion Notes List
-_To be populated by dev agent_
+- Installed @microsoft/signalr package (v8.0)
+- Created SignalR client service (`SignalRClient`) with connection management, group subscription, and event handling
+- Created TypeScript type definitions for SignalR events (RecommendationReady, JobAssigned)
+- Implemented React context (`SignalRProvider`) and hook (`useSignalR`) for easy component integration
+- Added SignalRProvider to root layout with auto-connect enabled
+- Implemented automatic reconnection with exponential backoff
+- Implemented group management (dispatcher groups, contractor groups) with automatic rejoin on reconnection
+- Event handlers support multiple subscribers with unsubscribe functionality
+- Connection state tracking and management
+- Error handling and logging throughout
+- Note: JobRescheduled and JobCancelled events deferred (not in MVP scope per PRD)
 
 ### File List
-_To be populated by dev agent_
+**Created:**
+- `frontend/lib/realtime/signalr-types.ts` - TypeScript type definitions for SignalR events
+- `frontend/lib/realtime/signalr-client.ts` - SignalR client service class
+- `frontend/lib/realtime/signalr-context.tsx` - React context provider for SignalR
+- `frontend/hooks/use-signalr.ts` - React hook for accessing SignalR context
+
+**Modified:**
+- `frontend/app/layout.tsx` - Added SignalRProvider wrapper
+- `frontend/package.json` - Added @microsoft/signalr dependency
 
 ## QA Results
 _To be populated by QA agent_

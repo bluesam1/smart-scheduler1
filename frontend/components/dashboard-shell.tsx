@@ -15,9 +15,14 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle"
 import { SidebarNav } from "@/components/sidebar-nav"
 import { GlobalSearch } from "@/components/global-search"
+import { useAuth } from "@/lib/auth/auth-context"
+import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
+import { toast } from "sonner"
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
+  const { logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window !== "undefined") {
@@ -30,6 +35,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem("sidebar-collapsed", String(sidebarCollapsed))
   }, [sidebarCollapsed])
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      toast.success("Logged out successfully")
+      router.push("/login")
+      router.refresh()
+    } catch (error) {
+      toast.error("Failed to log out. Please try again.")
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -72,7 +88,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   <Link href="/settings">Settings</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Sign out</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>Sign out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

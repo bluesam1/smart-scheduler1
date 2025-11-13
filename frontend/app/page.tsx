@@ -2,10 +2,12 @@ import { DashboardShell } from "@/components/dashboard-shell"
 import { JobQueue } from "@/components/jobs/job-queue"
 import { StatsOverview } from "@/components/stats-overview"
 import { ActivityFeed } from "@/components/activity-feed"
+import { AuthGuard } from "@/components/auth/auth-guard"
 
 export default function DashboardPage() {
   return (
-    <DashboardShell>
+    <AuthGuard requireAuth={true}>
+      <DashboardShell>
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <div>
@@ -27,5 +29,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </DashboardShell>
+    </AuthGuard>
   )
 }

@@ -1,0 +1,64 @@
+schema: 1
+story: "DASH.4"
+story_title: "Connect Activity Feed UI to API"
+gate: CONCERNS
+status_reason: "UI integration is well-implemented with proper error handling, but missing tests and SignalR real-time updates not implemented."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-27T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "TEST-001"
+    severity: medium
+    finding: "No component tests for ActivityFeed API integration"
+    suggested_action: "Add React Testing Library tests for API calls, loading states, error handling, and timestamp formatting"
+    suggested_owner: "dev"
+  - id: "FEATURE-001"
+    severity: medium
+    finding: "SignalR real-time updates (AC 6) not implemented - only auto-refresh every 30 seconds"
+    suggested_action: "Add SignalR client connection to listen for domain events and update feed in real-time"
+    suggested_owner: "dev"
+  - id: "FEATURE-002"
+    severity: low
+    finding: "Activity type filtering (AC 10) not implemented in UI"
+    suggested_action: "Add filter UI controls to allow filtering by activity types"
+    suggested_owner: "dev"
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 2, low: 1 }
+  recommendations:
+    must_fix: []
+    monitor: []
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 3
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 7, 8, 9]  # Most ACs met
+    ac_gaps: [6, 10]  # Real-time updates, filtering UI
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Uses authenticated fetch with token refresh. No security concerns."
+  performance:
+    status: PASS
+    notes: "Auto-refresh every 30 seconds is reasonable. UI remains responsive."
+  reliability:
+    status: PASS
+    notes: "Proper error handling, loading states, graceful degradation on API failures."
+  maintainability:
+    status: PASS
+    notes: "Clean React component, proper hooks usage, good icon mapping for activity types."
+
+recommendations:
+  immediate:
+    - action: "Add component tests for ActivityFeed"
+      refs: ["frontend/components/activity-feed.tsx"]
+  future:
+    - action: "Implement SignalR real-time updates for activity feed"
+      refs: ["frontend/components/activity-feed.tsx", "frontend/lib/realtime/signalr-client.ts"]
+    - action: "Add activity type filtering UI"
+      refs: ["frontend/components/activity-feed.tsx"]
+

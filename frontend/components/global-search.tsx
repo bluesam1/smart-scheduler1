@@ -1,51 +1,117 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Search, Briefcase, User } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth/auth-context"
+import { createApiClients } from "@/lib/api/api-client-config"
+import { formatErrorForDisplay, isAuthenticationError } from "@/lib/api/error-handling"
+import { toast } from "sonner"
+import type { JobDto, ContractorDto } from "@/lib/api/generated/api-client"
 
-// Mock data - in production this would come from your API
-const mockJobs = [
-  { id: "1", type: "Hardwood Installation", address: "123 Oak Street" },
-  { id: "2", type: "Tile Repair", address: "456 Maple Ave" },
-  { id: "3", type: "Carpet Installation", address: "789 Pine Road" },
-]
+interface SearchJob {
+  id: string
+  type: string
+  address: string
+}
 
-const mockContractors = [
-  { id: "1", name: "John Martinez", skills: "Hardwood, Laminate" },
-  { id: "2", name: "Sarah Chen", skills: "Carpet, Vinyl" },
-  { id: "3", name: "Mike Johnson", skills: "Tile, Stone" },
-]
+interface SearchContractor {
+  id: string
+  name: string
+  skills: string
+}
 
 export function GlobalSearch() {
+  const { getTokenProvider, isAuthenticated } = useAuth()
   const [query, setQuery] = useState("")
   const [isOpen, setIsOpen] = useState(false)
-  const [results, setResults] = useState<{ jobs: typeof mockJobs; contractors: typeof mockContractors }>({
+  const [allJobs, setAllJobs] = useState<JobDto[]>([])
+  const [allContractors, setAllContractors] = useState<ContractorDto[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [results, setResults] = useState<{ jobs: SearchJob[]; contractors: SearchContractor[] }>({
     jobs: [],
     contractors: [],
   })
   const ref = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
+  const fetchData = useCallback(async () => {
+    if (!isAuthenticated) return
+
+    setIsLoading(true)
+    try {
+      const tokenProvider = getTokenProvider()
+      if (!tokenProvider) {
+        setIsLoading(false)
+        return
+      }
+
+      const { client } = createApiClients(tokenProvider)
+      
+      // Fetch jobs and contractors in parallel
+      const [jobs, contractors] = await Promise.all([
+        client.getJobs(null, null, 100), // Limit to 100 for search
+        client.getContractors(null, 100), // Limit to 100 for search
+      ])
+
+      setAllJobs(jobs || [])
+      setAllContractors(contractors || [])
+    } catch (err) {
+      const errorMessage = formatErrorForDisplay(err)
+      if (isAuthenticationError(err)) {
+        toast.error("Please log in to search")
+      } else {
+        console.error("Failed to load search data:", errorMessage)
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAuthenticated, getTokenProvider])
+
+  // Fetch data on mount
   useEffect(() => {
-    if (query.length > 0) {
-      const jobResults = mockJobs.filter(
-        (job) =>
-          job.type.toLowerCase().includes(query.toLowerCase()) ||
-          job.address.toLowerCase().includes(query.toLowerCase()),
-      )
-      const contractorResults = mockContractors.filter(
-        (contractor) =>
-          contractor.name.toLowerCase().includes(query.toLowerCase()) ||
-          contractor.skills.toLowerCase().includes(query.toLowerCase()),
-      )
+    fetchData()
+  }, [fetchData])
+
+  useEffect(() => {
+    if (query.length > 0 && !isLoading) {
+      // Filter jobs
+      const jobResults: SearchJob[] = allJobs
+        .filter(
+          (job) =>
+            job.type?.toLowerCase().includes(query.toLowerCase()) ||
+            job.location?.address?.toLowerCase().includes(query.toLowerCase()) ||
+            job.location?.formattedAddress?.toLowerCase().includes(query.toLowerCase()) ||
+            job.location?.city?.toLowerCase().includes(query.toLowerCase()),
+        )
+        .map((job) => ({
+          id: job.id || "",
+          type: job.type || "",
+          address: job.location?.formattedAddress || job.location?.address || `${job.location?.city || ""}, ${job.location?.state || ""}`.trim() || "",
+        }))
+        .slice(0, 5) // Limit to 5 results
+
+      // Filter contractors
+      const contractorResults: SearchContractor[] = allContractors
+        .filter(
+          (contractor) =>
+            contractor.name?.toLowerCase().includes(query.toLowerCase()) ||
+            contractor.skills?.some((skill) => skill.toLowerCase().includes(query.toLowerCase())),
+        )
+        .map((contractor) => ({
+          id: contractor.id || "",
+          name: contractor.name || "",
+          skills: contractor.skills?.join(", ") || "",
+        }))
+        .slice(0, 5) // Limit to 5 results
+
       setResults({ jobs: jobResults, contractors: contractorResults })
       setIsOpen(true)
     } else {
       setIsOpen(false)
     }
-  }, [query])
+  }, [query, allJobs, allContractors, isLoading])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

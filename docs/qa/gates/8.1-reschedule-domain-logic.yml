@@ -1,0 +1,40 @@
+schema: 1
+story: "8.1"
+story_title: "Reschedule Domain Logic"
+gate: PASS
+status_reason: "Implementation is solid with comprehensive validation, conflict detection, and proper domain event handling. All tests passing."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-12T23:30:00Z"
+
+waiver: { active: false }
+top_issues: []
+
+evidence:
+  tests_reviewed: 7
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "No security concerns - proper validation and authorization handled at API layer"
+  performance:
+    status: PASS
+    notes: "Efficient conflict detection, async consistency checks don't block operations"
+  reliability:
+    status: PASS
+    notes: "Comprehensive error handling, proper validation of business rules"
+  maintainability:
+    status: PASS
+    notes: "Clean separation of concerns, well-documented code, good test coverage"
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Consider adding integration tests for end-to-end reschedule flow"
+      refs: ["src/SmartScheduler.Application.Tests/Contracts/Handlers/RescheduleJobCommandHandlerTests.cs"]
+    - action: "Consider adding performance tests for reschedule with many assignments"
+      refs: []
+

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -11,6 +11,12 @@ import { Calendar, Plus, Trash2, XCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TimeSelect } from "@/components/ui/time-select"
+import { createApiClients } from "@/lib/api/api-client-config"
+import { useAuth } from "@/lib/auth/auth-context"
+import { formatErrorForDisplay, isAuthenticationError } from "@/lib/api/error-handling"
+import { toast } from "sonner"
+import { Spinner } from "@/components/ui/spinner"
+import type { CalendarExceptionDto, WorkingHoursDto } from "@/lib/api/generated/api-client"
 
 interface Exception {
   id: string
@@ -27,32 +33,9 @@ interface ExceptionsManagerProps {
 }
 
 export function ExceptionsManager({ contractorId }: ExceptionsManagerProps) {
-  const [exceptions, setExceptions] = useState<Exception[]>([
-    {
-      id: "1",
-      title: "Thanksgiving",
-      date: new Date(2025, 10, 28),
-      allDay: true,
-      type: "holiday",
-    },
-    {
-      id: "2",
-      title: "Doctor's Appointment",
-      date: new Date(2025, 10, 20),
-      allDay: false,
-      startTime: "14:00",
-      endTime: "16:00",
-      type: "time-off",
-    },
-    {
-      id: "3",
-      title: "asdfasdf",
-      date: new Date(2025, 10, 11),
-      allDay: true,
-      type: "time-off",
-    },
-  ])
-
+  const { getTokenProvider } = useAuth()
+  const [exceptions, setExceptions] = useState<Exception[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [exceptionFilter, setExceptionFilter] = useState<"active" | "past">("active")
   const [newException, setNewException] = useState<Partial<Exception>>({
@@ -61,6 +44,50 @@ export function ExceptionsManager({ contractorId }: ExceptionsManagerProps) {
     allDay: true,
     type: "time-off",
   })
+
+  // Load existing exceptions from contractor
+  useEffect(() => {
+    const loadExceptions = async () => {
+      setIsLoading(true)
+      try {
+        const tokenProvider = getTokenProvider()
+        const { client } = createApiClients(tokenProvider)
+        const contractor = await client.getContractorById(contractorId)
+        
+        if (contractor?.calendar?.exceptions) {
+          // Map API exceptions to frontend format
+          const mappedExceptions: Exception[] = contractor.calendar.exceptions.map((exc, index) => {
+            const date = new Date(exc.date || "")
+            const isHoliday = exc.type === "Holiday"
+            const hasWorkingHours = exc.workingHours != null
+            
+            return {
+              id: `${contractorId}-${exc.date || index}`,
+              title: isHoliday ? "Holiday" : "Custom Override",
+              date,
+              allDay: !hasWorkingHours,
+              startTime: exc.workingHours?.startTime,
+              endTime: exc.workingHours?.endTime,
+              type: isHoliday ? "holiday" : "time-off",
+            }
+          })
+          
+          setExceptions(mappedExceptions)
+        }
+      } catch (err) {
+        const errorMessage = formatErrorForDisplay(err)
+        if (!isAuthenticationError(err)) {
+          toast.error(`Failed to load exceptions: ${errorMessage}`)
+        }
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (contractorId) {
+      loadExceptions()
+    }
+  }, [contractorId, getTokenProvider])
 
   const filteredExceptions = useMemo(() => {
     const today = new Date()
@@ -82,22 +109,91 @@ export function ExceptionsManager({ contractorId }: ExceptionsManagerProps) {
       })
   }, [exceptions, exceptionFilter])
 
-  const addException = () => {
-    if (newException.title && newException.date) {
-      setExceptions([
-        ...exceptions,
-        {
-          ...newException,
-          id: Date.now().toString(),
-        } as Exception,
-      ])
+  const addException = async () => {
+    if (!newException.title || !newException.date) {
+      toast.error("Title and date are required")
+      return
+    }
+
+    try {
+      const tokenProvider = getTokenProvider()
+      const { client } = createApiClients(tokenProvider)
+      
+      // Convert to API format
+      const dateOnly = new Date(newException.date!)
+      const dateStr = dateOnly.toISOString().split("T")[0]
+      const dateOnlyObj = dateStr // Will be parsed as DateOnly on backend
+      
+      const exceptionDto: CalendarExceptionDto = {
+        date: dateStr,
+        type: newException.type === "holiday" ? "Holiday" : "Override",
+        workingHours: newException.allDay ? undefined : (newException.startTime && newException.endTime ? {
+          dayOfWeek: dateOnly.getDay(),
+          startTime: newException.startTime,
+          endTime: newException.endTime,
+          timeZone: "America/New_York", // TODO: Get from contractor
+        } : undefined),
+      }
+
+      await client.addCalendarException(contractorId, exceptionDto)
+      
+      // Reload exceptions
+      const contractor = await client.getContractorById(contractorId)
+      if (contractor?.calendar?.exceptions) {
+        const mappedExceptions: Exception[] = contractor.calendar.exceptions.map((exc, index) => {
+          const date = new Date(exc.date || "")
+          const isHoliday = exc.type === "Holiday"
+          const hasWorkingHours = exc.workingHours != null
+          
+          return {
+            id: `${contractorId}-${exc.date || index}`,
+            title: isHoliday ? "Holiday" : "Custom Override",
+            date,
+            allDay: !hasWorkingHours,
+            startTime: exc.workingHours?.startTime,
+            endTime: exc.workingHours?.endTime,
+            type: isHoliday ? "holiday" : "time-off",
+          }
+        })
+        setExceptions(mappedExceptions)
+      }
+      
       setNewException({ title: "", date: new Date(), allDay: true, type: "time-off" })
       setDialogOpen(false)
+      toast.success("Exception added successfully")
+    } catch (err) {
+      const errorMessage = formatErrorForDisplay(err)
+      
+      if (isAuthenticationError(err)) {
+        toast.error("Please log in to add exceptions")
+      } else {
+        toast.error(`Failed to add exception: ${errorMessage}`)
+      }
     }
   }
 
-  const removeException = (id: string) => {
-    setExceptions(exceptions.filter((exc) => exc.id !== id))
+  const removeException = async (exception: Exception) => {
+    try {
+      const tokenProvider = getTokenProvider()
+      const { client } = createApiClients(tokenProvider)
+      
+      // Format date as YYYY-MM-DD
+      const dateStr = exception.date.toISOString().split("T")[0]
+      
+      await client.removeCalendarException(contractorId, dateStr)
+      
+      // Remove from local state
+      setExceptions(exceptions.filter((exc) => exc.id !== exception.id))
+      toast.success("Exception removed successfully")
+    } catch (err) {
+      const errorMessage = formatErrorForDisplay(err)
+      
+      if (isAuthenticationError(err)) {
+        toast.error("Please log in to remove exceptions")
+      } else {
+        toast.error(`Failed to remove exception: ${errorMessage}`)
+      }
+    }
   }
 
   const getTypeColor = (type: string) => {
@@ -109,6 +205,14 @@ export function ExceptionsManager({ contractorId }: ExceptionsManagerProps) {
       default:
         return "bg-destructive/10 text-destructive border-destructive/30"
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Spinner className="h-8 w-8" />
+      </div>
+    )
   }
 
   return (
@@ -274,7 +378,7 @@ export function ExceptionsManager({ contractorId }: ExceptionsManagerProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => removeException(exception.id)}
+                    onClick={() => removeException(exception)}
                     className="flex-shrink-0 h-8 w-8"
                   >
                     <Trash2 className="h-3.5 w-3.5" />

@@ -1,0 +1,45 @@
+schema: 1
+story: "5.5"
+story_title: "Score Breakdown Calculation"
+gate: PASS
+status_reason: "ScoreBreakdown DTO properly structured and integrated. All factor scores included. Optional rotation field correctly implemented."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-12T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues: []
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 0, low: 0 }
+  recommendations:
+    must_fix: []
+    monitor: []
+
+evidence:
+  tests_reviewed: 10  # Covered by ScoringServiceTests
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 6, 7, 8, 9, 10]
+    ac_gaps: [5]  # Included in recommendation response (Story 6.1)
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "No security concerns."
+  performance:
+    status: PASS
+    notes: "Breakdown calculated as part of scoring - no additional overhead. No performance impact."
+  reliability:
+    status: PASS
+    notes: "Breakdown is consistent with final score calculation. All scores properly normalized to 0-100 range."
+  maintainability:
+    status: PASS
+    notes: "Clean DTO structure. Optional rotation field properly handled. Well-documented."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Include breakdown in Recommendation DTO when API is implemented (Story 6.1)"
+      refs: ["src/SmartScheduler.Application/DTOs/ScoreBreakdown.cs"]
+

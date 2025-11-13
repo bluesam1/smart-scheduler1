@@ -1,0 +1,68 @@
+schema: 1
+story: "9.1"
+story_title: "Settings API (Job Types & Skills)"
+gate: CONCERNS
+status_reason: "Well-implemented API with proper validation and authorization, but missing comprehensive test coverage which is critical for configuration management endpoints."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-13T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "TEST-001"
+    severity: high
+    finding: "No automated tests for Settings API endpoints"
+    suggested_action: "Add integration tests covering all CRUD operations, validation scenarios, and authorization checks"
+    suggested_owner: "dev"
+  - id: "SEC-001"
+    severity: medium
+    finding: "DeleteJobTypeCommandHandler uses hardcoded 'System' user instead of actual user from request"
+    suggested_action: "Pass UpdatedBy from command to maintain proper audit trail"
+    suggested_owner: "dev"
+    status: "FIXED"
+    fixed_date: "2025-01-13"
+  - id: "PERF-001"
+    severity: low
+    finding: "DeleteJobTypeCommandHandler loads all jobs into memory to check usage"
+    suggested_action: "Consider adding repository method to check existence without loading all entities"
+    suggested_owner: "dev"
+
+risk_summary:
+  totals: { critical: 0, high: 1, medium: 1, low: 1 }
+  recommendations:
+    must_fix:
+      - "Add test coverage for Settings API endpoints before production deployment"
+    monitor:
+      - "Performance of GetAllAsync when checking in-use validation"
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 3
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: CONCERNS
+    notes: "Admin authorization properly enforced, but audit trail incomplete (hardcoded 'System' user in delete handler)"
+  performance:
+    status: PASS
+    notes: "No performance concerns identified, though GetAllAsync could be optimized"
+  reliability:
+    status: PASS
+    notes: "Proper error handling and validation in place"
+  maintainability:
+    status: PASS
+    notes: "Clean architecture with proper separation of concerns, well-documented code"
+
+recommendations:
+  immediate:
+    - action: "Add integration tests for all Settings API endpoints"
+      refs: ["src/SmartScheduler.Api.Tests/Endpoints/Settings/"]
+    - action: "Fix audit trail in DeleteJobTypeCommandHandler to use actual user"
+      refs: ["src/SmartScheduler.Application/Contracts/Handlers/DeleteJobTypeCommandHandler.cs:44"]
+  future:
+    - action: "Optimize in-use validation to avoid loading all jobs"
+      refs: ["src/SmartScheduler.Application/Contracts/Handlers/DeleteJobTypeCommandHandler.cs:35"]
+

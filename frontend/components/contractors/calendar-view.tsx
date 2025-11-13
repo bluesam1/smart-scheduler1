@@ -1,10 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ChevronLeft, ChevronRight, MapPin, Clock, XCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/lib/auth/auth-context"
+import { createApiClients } from "@/lib/api/api-client-config"
+import { formatErrorForDisplay, isAuthenticationError } from "@/lib/api/error-handling"
+import { toast } from "sonner"
+import { Spinner } from "@/components/ui/spinner"
+import type { JobDto } from "@/lib/api/generated/api-client"
 
 interface CalendarViewProps {
   contractorId: string
@@ -13,41 +19,115 @@ interface CalendarViewProps {
 
 type ViewType = "day" | "week" | "month"
 
-// Mock data generator
-const generateScheduleData = (date: Date, contractorId: string) => {
-  const mockJobs = [
-    {
-      id: "J-001",
-      title: "HVAC Repair",
-      location: "123 Main St, New York, NY",
-      startTime: "08:00",
-      endTime: "10:00",
-      status: "assigned",
-      timezone: "America/New_York",
-    },
-    {
-      id: "J-045",
-      title: "Electrical Inspection",
-      location: "456 Oak Ave, Brooklyn, NY",
-      startTime: "11:00",
-      endTime: "13:00",
-      status: "assigned",
-      timezone: "America/New_York",
-    },
-  ]
+interface CalendarJob {
+  id: string
+  title: string
+  location: string
+  startTime: string
+  endTime: string
+  status: string
+  timezone?: string
+}
 
-  const mockExceptions = [
-    { date: new Date(2025, 10, 15), type: "holiday", title: "Thanksgiving Prep", allDay: true },
-    { date: new Date(2025, 10, 20), type: "time-off", title: "Personal Time", startTime: "14:00", endTime: "17:00" },
-  ]
-
-  return { jobs: mockJobs, exceptions: mockExceptions }
+interface CalendarException {
+  date: Date
+  type: "holiday" | "time-off"
+  title: string
+  allDay?: boolean
+  startTime?: string
+  endTime?: string
 }
 
 export function CalendarView({ contractorId, contractorName }: CalendarViewProps) {
+  const { getTokenProvider, isAuthenticated, isLoading: authLoading } = useAuth()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [viewType, setViewType] = useState<ViewType>("week")
-  const { jobs, exceptions } = generateScheduleData(currentDate, contractorId)
+  const [jobs, setJobs] = useState<CalendarJob[]>([])
+  const [exceptions, setExceptions] = useState<CalendarException[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchScheduleData = useCallback(async () => {
+    if (authLoading) return
+
+    if (!isAuthenticated) {
+      setIsLoading(false)
+      setError("Authentication required. Please log in.")
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const tokenProvider = getTokenProvider()
+      if (!tokenProvider) {
+        setError("Authentication required. Please log in.")
+        setIsLoading(false)
+        return
+      }
+
+      const { client } = createApiClients(tokenProvider)
+      
+      // Fetch all jobs and filter by contractor assignments
+      const allJobs = await client.getJobs(null, null, null)
+      
+      // Filter jobs assigned to this contractor
+      const contractorJobs = allJobs.filter((job) =>
+        job.assignedContractors?.some((assignment) => assignment.contractorId === contractorId)
+      )
+
+      // Map JobDto to CalendarJob format
+      const calendarJobs: CalendarJob[] = contractorJobs
+        .filter((job) => job.serviceWindow?.start && job.serviceWindow?.end)
+        .map((job) => {
+          const startDate = new Date(job.serviceWindow!.start!)
+          const endDate = new Date(job.serviceWindow!.end!)
+          
+          // Format times as HH:MM
+          const startTime = `${startDate.getHours().toString().padStart(2, "0")}:${startDate.getMinutes().toString().padStart(2, "0")}`
+          const endTime = `${endDate.getHours().toString().padStart(2, "0")}:${endDate.getMinutes().toString().padStart(2, "0")}`
+          
+          // Format location
+          const location =
+            job.location?.formattedAddress ||
+            job.location?.address ||
+            `${job.location?.city || ""}, ${job.location?.state || ""}`.trim() ||
+            "Location not specified"
+
+          return {
+            id: job.id || "",
+            title: job.type || "Untitled Job",
+            location,
+            startTime,
+            endTime,
+            status: "assigned",
+            timezone: job.timezone,
+          }
+        })
+
+      setJobs(calendarJobs)
+      
+      // Note: Exceptions (holidays/time-off) are not yet supported by the API
+      // This will be implemented in a future story
+      setExceptions([])
+    } catch (err) {
+      const errorMessage = formatErrorForDisplay(err)
+      setError(errorMessage)
+
+      if (isAuthenticationError(err)) {
+        toast.error("Please log in to view schedule")
+      } else {
+        toast.error(`Failed to load schedule: ${errorMessage}`)
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }, [contractorId, isAuthenticated, authLoading, getTokenProvider])
+
+  useEffect(() => {
+    fetchScheduleData()
+  }, [fetchScheduleData])
 
   const navigate = (direction: "prev" | "next") => {
     const newDate = new Date(currentDate)
@@ -78,6 +158,28 @@ export function CalendarView({ contractorId, contractorName }: CalendarViewProps
     } else {
       return currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })
     }
+  }
+
+  if (authLoading || isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-12">
+        <Spinner className="h-8 w-8" />
+        <p className="text-sm text-muted-foreground">
+          {authLoading ? "Initializing..." : "Loading schedule..."}
+        </p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-12">
+        <p className="text-sm text-destructive">{error}</p>
+        <Button onClick={fetchScheduleData} variant="outline">
+          Retry
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -160,8 +262,8 @@ function WeekView({
 
         {/* Time slots */}
         {hours.map((hour) => (
-          <>
-            <div key={`time-${hour}`} className="p-2 border-b border-r text-xs text-muted-foreground bg-muted/30">
+          <div key={`time-${hour}`} className="contents">
+            <div className="p-2 border-b border-r text-xs text-muted-foreground bg-muted/30">
               {hour > 12 ? hour - 12 : hour}:00 {hour >= 12 ? "PM" : "AM"}
             </div>
             {weekDays.map((day, dayIndex) => {
@@ -209,7 +311,7 @@ function WeekView({
                 </div>
               )
             })}
-          </>
+          </div>
         ))}
       </div>
     </div>

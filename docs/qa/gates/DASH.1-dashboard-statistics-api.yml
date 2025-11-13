@@ -1,0 +1,73 @@
+schema: 1
+story: "DASH.1"
+story_title: "Dashboard Statistics API"
+gate: CONCERNS
+status_reason: "Implementation is solid with proper architecture, but missing tests and database migration for EventLog. Performance optimization needed for utilization calculation."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-27T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "TEST-001"
+    severity: medium
+    finding: "No unit or integration tests for dashboard statistics endpoint"
+    suggested_action: "Add tests for GetDashboardStatisticsQueryHandler covering all calculation scenarios"
+    suggested_owner: "dev"
+  - id: "PERF-001"
+    severity: medium
+    finding: "Utilization calculation performs N+1 queries (one per contractor for assignments)"
+    suggested_action: "Optimize with batch queries or aggregate at database level"
+    suggested_owner: "dev"
+  - id: "MIGRATION-001"
+    severity: low
+    finding: "EventLog entity created but no database migration generated"
+    suggested_action: "Run 'dotnet ef migrations add AddEventLog' to create migration"
+    suggested_owner: "dev"
+  - id: "CACHE-001"
+    severity: low
+    finding: "Cache invalidation not implemented - cache only expires after TTL"
+    suggested_action: "Add cache invalidation on relevant domain events (job/contractor changes)"
+    suggested_owner: "dev"
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 2, low: 2 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - "Dashboard statistics query performance under load"
+      - "Cache hit rates and effectiveness"
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 4
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 8, 9, 10]  # Most ACs met
+    ac_gaps: [7]  # Performance verification (p95 < 500ms) not tested
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Authorization properly applied (Dispatcher/Admin policy). No security concerns."
+  performance:
+    status: CONCERNS
+    notes: "N+1 query pattern in utilization calculation could impact performance. No performance tests to verify p95 < 500ms target."
+  reliability:
+    status: PASS
+    notes: "Error handling present, caching reduces load. Graceful degradation if calculations fail."
+  maintainability:
+    status: PASS
+    notes: "Clean architecture, well-structured code, good separation of concerns. Comments explain complex calculations."
+
+recommendations:
+  immediate:
+    - action: "Add comprehensive tests for statistics calculations"
+      refs: ["src/SmartScheduler.Application/Contracts/Handlers/GetDashboardStatisticsQueryHandler.cs"]
+    - action: "Optimize utilization calculation to avoid N+1 queries"
+      refs: ["src/SmartScheduler.Application/Contracts/Handlers/GetDashboardStatisticsQueryHandler.cs:147-179"]
+  future:
+    - action: "Add performance tests to verify p95 < 500ms target"
+      refs: ["src/SmartScheduler.Api.Tests/"]
+    - action: "Implement cache invalidation on domain events"
+      refs: ["src/SmartScheduler.Application/Contracts/Handlers/GetDashboardStatisticsQueryHandler.cs"]
+

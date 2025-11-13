@@ -1,0 +1,73 @@
+schema: 1
+story: "DASH.3"
+story_title: "Activity Feed API"
+gate: CONCERNS
+status_reason: "API implementation is solid with good event transformation, but missing tests, database migration, and EventLog persistence not yet integrated with event publishers."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-27T00:00:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "TEST-001"
+    severity: medium
+    finding: "No tests for activity feed endpoint or event transformation logic"
+    suggested_action: "Add tests for GetActivitiesQueryHandler and event transformation scenarios"
+    suggested_owner: "dev"
+  - id: "MIGRATION-001"
+    severity: medium
+    finding: "EventLog entity created but no database migration generated"
+    suggested_action: "Run 'dotnet ef migrations add AddEventLog' to create migration"
+    suggested_owner: "dev"
+  - id: "INTEGRATION-001"
+    severity: medium
+    finding: "EventLog repository exists but event publishers don't persist to EventLog yet"
+    suggested_action: "Update event publishers (e.g., SignalRRealtimePublisher) to persist events to EventLog"
+    suggested_owner: "dev"
+  - id: "ERROR-001"
+    severity: low
+    finding: "Event transformation silently returns 'unknown' type on parse failures"
+    suggested_action: "Consider logging or alerting on transformation failures for monitoring"
+    suggested_owner: "dev"
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 3, low: 1 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - "EventLog table growth and query performance"
+      - "Event transformation failure rates"
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 4
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 7, 8, 9, 10]  # Most ACs met
+    ac_gaps: [6]  # Performance not explicitly tested
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Authorization properly applied (Dispatcher/Admin policy). No security concerns."
+  performance:
+    status: PASS
+    notes: "Efficient querying with indexes on EventType and CreatedAt. Limit enforced (max 100)."
+  reliability:
+    status: PASS
+    notes: "Graceful error handling in transformation. Returns fallback activity on parse failures."
+  maintainability:
+    status: PASS
+    notes: "Clean transformation logic, good separation of concerns. Easy to extend with new event types."
+
+recommendations:
+  immediate:
+    - action: "Create database migration for EventLog table"
+      refs: ["src/SmartScheduler.Infrastructure/Data/SmartSchedulerDbContext.cs"]
+    - action: "Integrate EventLog persistence with event publishers"
+      refs: ["src/SmartScheduler.Realtime/Services/SignalRRealtimePublisher.cs"]
+    - action: "Add tests for activity feed endpoint and transformation"
+      refs: ["src/SmartScheduler.Application/Contracts/Handlers/GetActivitiesQueryHandler.cs"]
+  future:
+    - action: "Add monitoring/alerting for event transformation failures"
+      refs: ["src/SmartScheduler.Application/Contracts/Handlers/GetActivitiesQueryHandler.cs:68-101"]
+

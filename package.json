@@ -1,0 +1,28 @@
+{
+  "name": "smart-scheduler",
+  "version": "1.0.0",
+  "description": "SmartScheduler - Intelligent job scheduling and dispatch system",
+  "private": true,
+  "scripts": {
+    "generate-api-client": "./scripts/generate-api-client.sh",
+    "dev": "concurrently -n \"API,FRONTEND\" -c \"blue,green\" \"npm run dev:api\" \"npm run dev:frontend\"",
+    "dev:api": "cd src/SmartScheduler.Api && dotnet run --launch-profile http",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:all": "npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "."
+  },
+  "keywords": [
+    "scheduling",
+    "dispatch",
+    "job-management"
+  ],
+  "author": "",
+  "license": "UNLICENSED"
+}
+

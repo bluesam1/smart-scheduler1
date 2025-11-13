@@ -1,0 +1,67 @@
+schema: 1
+story: "4.1"
+story_title: "OpenRouteService Client Implementation"
+gate: CONCERNS
+status_reason: "Implementation complete with good resilience patterns, but missing service tests and status marked 'Approved' without QA review."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-01-XXT00:00:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "TEST-001"
+    severity: medium
+    finding: "Missing service tests for OpenRouteServiceClient (distance, ETA, matrix API)"
+    suggested_action: "Add service tests with mocked ORS API in src/SmartScheduler.Infrastructure.Tests/ExternalServices/"
+    suggested_owner: "dev"
+  - id: "TEST-002"
+    severity: medium
+    finding: "Missing resilience tests for retry, circuit breaker, and timeout policies"
+    suggested_action: "Add tests for Polly resilience policies (retry, circuit breaker, timeout)"
+    suggested_owner: "dev"
+  - id: "STATUS-001"
+    severity: low
+    finding: "Story status marked 'Approved' but no QA gate file exists - status inconsistency"
+    suggested_action: "Update story status to reflect actual review state"
+    suggested_owner: "sm"
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 2, low: 1 }
+  recommendations:
+    must_fix: []
+    monitor:
+      - "Service test coverage"
+      - "Resilience policy test coverage"
+      - "Status consistency"
+
+evidence:
+  tests_reviewed: 0
+  risks_identified: 3
+  trace:
+    ac_covered: [1, 2, 3, 4, 6, 7, 8, 9, 10]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "API key configured via configuration/environment variables (AWS Secrets Manager deferred)"
+  performance:
+    status: PASS
+    notes: "Resilience policies configured (timeout: 3500ms)"
+  reliability:
+    status: PASS
+    notes: "Polly resilience policies: retry (2 attempts), circuit breaker (5 failures, 30s open), timeout (3500ms)"
+  maintainability:
+    status: PASS
+    notes: "Clean interface, comprehensive error handling and logging"
+
+recommendations:
+  immediate:
+    - action: "Add service tests for OpenRouteServiceClient with mocked ORS API"
+      refs: ["src/SmartScheduler.Infrastructure.Tests/ExternalServices/OpenRouteServiceClientTests.cs"]
+    - action: "Add resilience tests for Polly policies"
+      refs: ["src/SmartScheduler.Infrastructure.Tests/Resilience/"]
+  future:
+    - action: "Plan AWS Secrets Manager integration for production"
+      refs: ["src/SmartScheduler.Infrastructure/ExternalServices/OpenRouteServiceClient.cs"]
+
