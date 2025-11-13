@@ -34,8 +34,11 @@ customHeaders:
         value: 'DENY'
       - key: 'X-XSS-Protection'
         value: '1; mode=block'
-rewrites:
+redirects:
+  # Rewrite all routes to index.html for client-side routing
+  # Note: Amplify will serve static files (like /_next/static/*) if they exist
+  # This rewrite only applies when the file doesn't exist
   - source: '/<*>'
     target: '/index.html'
-    status: '200'
+    status: '200-299'
 

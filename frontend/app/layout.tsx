@@ -6,6 +6,7 @@ import "./globals.css"
 import { SettingsProvider } from "@/lib/settings-context"
 import { AuthProvider } from "@/lib/auth/auth-context"
 import { SignalRProvider } from "@/lib/realtime/signalr-context"
+import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 
@@ -41,17 +42,24 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased`}>
-        <AuthProvider>
-          <SignalRProvider dispatcherRegion="Default" autoConnect={true}>
-            <SettingsProvider>
-              {children}
-              <Toaster />
-              <SonnerToaster />
-            </SettingsProvider>
-          </SignalRProvider>
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <SignalRProvider dispatcherRegion="Default" autoConnect={true}>
+              <SettingsProvider>
+                {children}
+                <Toaster />
+                <SonnerToaster />
+              </SettingsProvider>
+            </SignalRProvider>
+          </AuthProvider>
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>
