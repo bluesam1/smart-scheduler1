@@ -6,11 +6,10 @@ frontend:
         - cd frontend
         # Install all dependencies (npm ci includes devDependencies by default)
         - npm ci
-        # Ensure Tailwind CSS v4 dependencies are installed
-        - npm install @tailwindcss/postcss tailwindcss postcss --save-dev
+        # Ensure @tailwindcss/postcss is available (moved to dependencies for build)
+        - npm install @tailwindcss/postcss --save || true
         # Rebuild native modules for Linux (Tailwind CSS v4 requires native bindings)
-        - npm rebuild @tailwindcss/oxide || true
-        - npm install @tailwindcss/oxide --force || true
+        - npm rebuild @tailwindcss/oxide || npm install @tailwindcss/oxide --force || true
     build:
       commands:
         - npm run build

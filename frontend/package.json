@@ -61,10 +61,10 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.9",
-    "zod": "3.25.76"
+    "zod": "3.25.76",
+    "@tailwindcss/postcss": "^4.1.9"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.9",
     "@types/google.maps": "^3.58.1",
     "@types/node": "^22",
     "@types/react": "^19",
