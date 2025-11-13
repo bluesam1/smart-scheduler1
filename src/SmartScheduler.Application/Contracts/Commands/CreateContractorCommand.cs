@@ -11,3 +11,4 @@ public record CreateContractorCommand : IRequest<ContractorDto>
     public CreateContractorRequest Request { get; init; } = null!;
 }
 
+

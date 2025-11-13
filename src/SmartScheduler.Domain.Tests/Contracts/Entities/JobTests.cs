@@ -51,7 +51,7 @@ public class JobTests
         Assert.Equal("America/New_York", job.Timezone);
         Assert.Equal(serviceWindow, job.ServiceWindow);
         Assert.Equal(Priority.Normal, job.Priority);
-        Assert.Equal(JobStatus.Created, job.Status);
+        Assert.Equal(JobStatus.Scheduled, job.Status);
         Assert.Equal(2, job.RequiredSkills.Count);
         Assert.Equal("hardwood installation", job.RequiredSkills[0]); // Normalized
         Assert.Equal("tile", job.RequiredSkills[1]); // Normalized
@@ -320,10 +320,10 @@ public class JobTests
         var job = CreateValidJob();
 
         // Act
-        job.UpdateStatus(JobStatus.Assigned);
+        job.UpdateStatus(JobStatus.InProgress);
 
         // Assert
-        Assert.Equal(JobStatus.Assigned, job.Status);
+        Assert.Equal(JobStatus.InProgress, job.Status);
     }
 
     [Fact]
@@ -333,8 +333,8 @@ public class JobTests
         var job = CreateValidJob();
 
         // Act & Assert
-        // Cannot go directly from Created to InProgress
-        Assert.Throws<InvalidOperationException>(() => job.UpdateStatus(JobStatus.InProgress));
+        // Cannot go directly from Scheduled to Completed
+        Assert.Throws<InvalidOperationException>(() => job.UpdateStatus(JobStatus.Completed));
     }
 
     [Fact]
@@ -354,7 +354,7 @@ public class JobTests
         Assert.Equal(contractorId, job.AssignedContractors[0].ContractorId);
         Assert.Equal(startUtc, job.AssignedContractors[0].StartUtc);
         Assert.Equal(endUtc, job.AssignedContractors[0].EndUtc);
-        Assert.Equal(JobStatus.Assigned, job.Status);
+        Assert.Equal(JobStatus.Scheduled, job.Status); // Status remains Scheduled
         Assert.Contains(job.DomainEvents, e => e is JobAssigned);
         var assignedEvent = job.DomainEvents.OfType<JobAssigned>().First();
         Assert.Equal(contractorId, assignedEvent.ContractorId);
@@ -383,7 +383,7 @@ public class JobTests
         job.Cancel("Customer cancelled");
 
         // Assert
-        Assert.Equal(JobStatus.Cancelled, job.Status);
+        Assert.Equal(JobStatus.Canceled, job.Status);
         Assert.Contains(job.DomainEvents, e => e is JobCancelled);
         var cancelledEvent = job.DomainEvents.OfType<JobCancelled>().First();
         Assert.Equal("Customer cancelled", cancelledEvent.Reason);
@@ -394,7 +394,6 @@ public class JobTests
     {
         // Arrange
         var job = CreateValidJob();
-        job.UpdateStatus(JobStatus.Assigned);
         job.UpdateStatus(JobStatus.InProgress);
         job.UpdateStatus(JobStatus.Completed);
 

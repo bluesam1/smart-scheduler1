@@ -12,3 +12,4 @@ public record UpdateJobCommand : IRequest<JobDto>
     public UpdateJobRequest Request { get; init; } = null!;
 }
 
+

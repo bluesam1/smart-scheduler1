@@ -33,6 +33,8 @@ interface RecommendationCardProps {
     rationale: string
     suggestedSlots: Array<{
       time: string
+      startUtc?: string
+      endUtc?: string
       label: string
       confidence: string
     }>
@@ -84,7 +86,7 @@ export function RecommendationCard({ recommendation, rank, onAssign, jobDuration
       }
 
       const { client } = createApiClients(tokenProvider)
-      const contractor = await client.getContractor(recommendation.contractorId)
+      const contractor = await client.getContractorById(recommendation.contractorId)
       setSelectedContractor(contractor)
     } catch (error) {
       console.error("Failed to fetch contractor details:", error)
@@ -96,32 +98,51 @@ export function RecommendationCard({ recommendation, rank, onAssign, jobDuration
 
   const getRecommendedTimeDisplay = () => {
     if (!recommendation.suggestedSlots || recommendation.suggestedSlots.length === 0) {
-      return "No available times"
+      return "Click to view calendar and schedule"
     }
 
-    // Convert time strings like "08:00" to "8am"
-    const formatTimeShort = (time: string) => {
-      const [hours, minutes] = time.split(":").map(Number)
-      const period = hours >= 12 ? "pm" : "am"
-      const displayHour = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours
-      return `${displayHour}${period}`
+    // If slots have startUtc/endUtc, use those for proper date and time range display
+    const firstSlot = recommendation.suggestedSlots[0]
+    
+    if (firstSlot.startUtc && firstSlot.endUtc) {
+      const startDate = new Date(firstSlot.startUtc)
+      const endDate = new Date(firstSlot.endUtc)
+      
+      // Format date: "Mon, Jul 13"
+      const dateStr = startDate.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric"
+      })
+      
+      // Format times: "9:00 AM - 11:00 AM"
+      const startTime = startDate.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+      })
+      
+      const endTime = endDate.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+      })
+      
+      return `${dateStr} • ${startTime} - ${endTime}`
     }
-
-    // Each slot should have a time range, so parse and format them
-    // Assuming slot.time is like "08:00 - 10:00"
-    const ranges = recommendation.suggestedSlots.map((slot) => {
-      const timeStr = slot.time
-      if (timeStr.includes(" - ")) {
-        const [start, end] = timeStr.split(" - ")
-        return `${formatTimeShort(start)}-${formatTimeShort(end)}`
-      }
-      return timeStr
-    })
-
-    return ranges.join(" and ")
+    
+    // Fallback to old format if datetime not available
+    return recommendation.suggestedSlots.map(slot => slot.time).join(" and ")
   }
 
   const handleRecommendedTimeClick = () => {
+    // If no suggested slots, open the calendar to manually schedule
+    if (!recommendation.suggestedSlots || recommendation.suggestedSlots.length === 0) {
+      console.log("[v0] No suggested slots, opening calendar scheduler")
+      setShowScheduler(true)
+      return
+    }
+
     console.log("[v0] Quick scheduling with recommended time")
 
     // Create sessions from the suggested slots
@@ -284,7 +305,11 @@ export function RecommendationCard({ recommendation, rank, onAssign, jobDuration
           </div>
 
           <div className="space-y-2">
-            <div className="text-xs text-muted-foreground uppercase tracking-wide">Recommended Time</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wide">
+              {(!recommendation.suggestedSlots || recommendation.suggestedSlots.length === 0) 
+                ? "Availability" 
+                : "Recommended Time"}
+            </div>
             <button
               onClick={handleRecommendedTimeClick}
               className="w-full px-4 py-2.5 rounded-md border border-primary/20 bg-primary/5 text-sm font-medium hover:bg-primary/10 hover:border-primary/30 transition-colors text-left cursor-pointer"

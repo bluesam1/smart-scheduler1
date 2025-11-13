@@ -38,3 +38,4 @@ public interface IWorkingHoursCalculator
         ContractorCalendar? calendar = null);
 }
 
+

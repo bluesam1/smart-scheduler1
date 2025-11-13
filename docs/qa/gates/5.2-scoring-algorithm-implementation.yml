@@ -45,3 +45,4 @@ recommendations:
     - action: "Consider performance profiling under load to validate efficiency"
       refs: ["src/SmartScheduler.Application/Recommendations/Services/ScoringService.cs"]
 
+

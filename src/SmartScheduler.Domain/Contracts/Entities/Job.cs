@@ -28,6 +28,7 @@ public class Job
     public DateTime DesiredDate { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
+    public Guid? LastRecommendationAuditId { get; private set; }
 
     // Computed properties (these would typically be calculated based on assignments)
     // For now, they are placeholders that would be computed in the application layer
@@ -94,7 +95,7 @@ public class Job
         Description = description;
         AccessNotes = accessNotes;
         Tools = tools;
-        Status = JobStatus.Created;
+        Status = JobStatus.Scheduled;
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
 
@@ -221,12 +222,9 @@ public class Job
         // Add assignment
         _assignments.Add(new ContractorAssignment(contractorId, startUtc, endUtc));
 
-        // Update status if needed
-        if (Status == JobStatus.Created)
-        {
-            Status = JobStatus.Assigned;
-        }
-
+        // Status remains Scheduled when contractor is assigned
+        // (AssignmentStatus will reflect the assignment)
+        
         UpdatedAt = DateTime.UtcNow;
 
         // Raise domain event
@@ -241,10 +239,10 @@ public class Job
         if (Status == JobStatus.Completed)
             throw new InvalidOperationException("Cannot cancel a completed job.");
 
-        if (Status == JobStatus.Cancelled)
-            throw new InvalidOperationException("Job is already cancelled.");
+        if (Status == JobStatus.Canceled)
+            throw new InvalidOperationException("Job is already canceled.");
 
-        Status = JobStatus.Cancelled;
+        Status = JobStatus.Canceled;
         UpdatedAt = DateTime.UtcNow;
 
         // Raise domain event
@@ -279,6 +277,15 @@ public class Job
     }
 
     /// <summary>
+    /// Updates the last recommendation audit ID (reference to cached recommendations).
+    /// </summary>
+    public void UpdateLastRecommendationAuditId(Guid? auditId)
+    {
+        LastRecommendationAuditId = auditId;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
     /// Clears all domain events.
     /// </summary>
     public void ClearDomainEvents()
@@ -306,11 +313,10 @@ public class Job
     {
         return currentStatus switch
         {
-            JobStatus.Created => newStatus == JobStatus.Assigned || newStatus == JobStatus.Cancelled,
-            JobStatus.Assigned => newStatus == JobStatus.InProgress || newStatus == JobStatus.Cancelled,
-            JobStatus.InProgress => newStatus == JobStatus.Completed || newStatus == JobStatus.Cancelled,
+            JobStatus.Scheduled => newStatus == JobStatus.InProgress || newStatus == JobStatus.Canceled,
+            JobStatus.InProgress => newStatus == JobStatus.Completed || newStatus == JobStatus.Canceled,
             JobStatus.Completed => false, // Cannot transition from completed
-            JobStatus.Cancelled => false, // Cannot transition from cancelled
+            JobStatus.Canceled => false, // Cannot transition from canceled
             _ => false
         };
     }

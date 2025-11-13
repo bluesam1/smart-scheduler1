@@ -29,7 +29,8 @@ public static class JobMappingExtensions
             Tools = job.Tools,
             DesiredDate = job.DesiredDate,
             CreatedAt = job.CreatedAt,
-            UpdatedAt = job.UpdatedAt
+            UpdatedAt = job.UpdatedAt,
+            LastRecommendationAuditId = job.LastRecommendationAuditId
         };
     }
 

@@ -1,13 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ArrowLeft, MapPin, Calendar, Clock, Sparkles, User, Edit2, Map, ChevronDown, X } from "lucide-react"
+import { ArrowLeft, MapPin, Calendar, Clock, Sparkles, User, Edit2, Map as MapIcon, ChevronDown, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RecommendationsSheet } from "./recommendations-sheet"
+import { BestAssignmentCard } from "./best-assignment-card"
+import { ContractorDetailsDialog } from "@/components/contractors/contractor-details-dialog"
 import Link from "next/link"
 import { MapViewDialog } from "@/components/map-view-dialog"
 import { MapInline } from "@/components/map-inline"
@@ -20,7 +22,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { GooglePlacesAutocomplete, type PlaceResult } from "@/components/ui/google-places-autocomplete"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { estimateTimezoneFromCoordinates } from "@/lib/timezone-utils"
-import type { JobDto, UpdateJobRequest, GeoLocationDto } from "@/lib/api/generated/api-client"
+import type { JobDto, UpdateJobRequest, GeoLocationDto, ContractorDto } from "@/lib/api/generated/api-client"
 import type { JobAssigned, JobRescheduled, JobCancelled } from "@/lib/realtime/signalr-types"
 import {
   Dialog,
@@ -45,10 +47,13 @@ export function JobDetailsView({ jobId }: { jobId: string }) {
   const { getTokenProvider } = useAuth()
   const { client: signalRClient } = useSignalR()
   const [job, setJob] = useState<JobDto | null>(null)
+  const [contractors, setContractors] = useState<Map<string, ContractorDto>>(new Map())
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [recommendationsOpen, setRecommendationsOpen] = useState(false)
   const [mapOpen, setMapOpen] = useState(false)
+  const [selectedContractor, setSelectedContractor] = useState<ContractorDto | null>(null)
+  const [isContractorDialogOpen, setIsContractorDialogOpen] = useState(false)
   
   // Address editing state
   const [isEditingAddress, setIsEditingAddress] = useState(false)
@@ -104,7 +109,12 @@ export function JobDetailsView({ jobId }: { jobId: string }) {
 
         const { client } = createApiClients(tokenProvider)
         console.log("[JobDetailsView] Fetching job with ID:", jobId)
-        const data = await client.getJobById(jobId)
+        
+        // Fetch job and contractors in parallel
+        const [data, contractorsData] = await Promise.all([
+          client.getJobById(jobId),
+          client.getContractors(null, null)
+        ])
         
         if (!data) {
           setError("Job not found")
@@ -114,6 +124,15 @@ export function JobDetailsView({ jobId }: { jobId: string }) {
         
         console.log("[JobDetailsView] Job loaded successfully:", data)
         setJob(data)
+        
+        // Build contractor lookup map
+        const contractorMap = new Map<string, ContractorDto>()
+        contractorsData.forEach(contractor => {
+          if (contractor.id) {
+            contractorMap.set(contractor.id, contractor)
+          }
+        })
+        setContractors(contractorMap)
         
         // Initialize address editing state
         if (data.location) {
@@ -744,7 +763,7 @@ export function JobDetailsView({ jobId }: { jobId: string }) {
 
               <div>
                 <div className="text-sm font-medium text-muted-foreground mb-1">Estimated Duration</div>
-                <p>{job.duration ? `${Math.round(job.duration / 60)} hours` : "-"}</p>
+                <p>{job.duration ? `${(job.duration / 60).toFixed(1)} hours` : "-"}</p>
               </div>
 
               <div>
@@ -799,6 +818,17 @@ export function JobDetailsView({ jobId }: { jobId: string }) {
         </div>
 
         <div className="space-y-6">
+          {/* Best Assignment Recommendation */}
+          {job.assignmentStatus === "Unassigned" && (
+            <BestAssignmentCard 
+              jobId={job.id} 
+              onAssigned={() => {
+                // Refetch job data after assignment
+                window.location.reload()
+              }} 
+            />
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>Assignment</CardTitle>
@@ -808,8 +838,39 @@ export function JobDetailsView({ jobId }: { jobId: string }) {
                 <>
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-1">Assigned To</div>
-                    <div className="font-medium">
-                      {job.assignedContractors.length} contractor(s) assigned
+                    <div className="space-y-2">
+                      {job.assignedContractors.map((assignment, idx) => {
+                        const contractor = assignment.contractorId ? contractors.get(assignment.contractorId) : null
+                        const travelTime = assignment.travelTimeMinutes
+                        const distance = assignment.distanceMeters
+                        
+                        return (
+                          <div key={idx} className="space-y-1">
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start bg-transparent"
+                              onClick={() => {
+                                if (contractor) {
+                                  setSelectedContractor(contractor)
+                                  setIsContractorDialogOpen(true)
+                                }
+                              }}
+                            >
+                              <User className="mr-2 h-4 w-4" />
+                              {contractor?.name || "Unknown Contractor"}
+                            </Button>
+                            {travelTime !== null && travelTime !== undefined && (
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground px-3">
+                                <Clock className="h-3 w-3" />
+                                <span>
+                                  {travelTime} min travel time
+                                  {distance && ` • ${(distance / 1609.34).toFixed(1)} mi`}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                   <Button
@@ -961,6 +1022,43 @@ export function JobDetailsView({ jobId }: { jobId: string }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Contractor Details Dialog */}
+      {selectedContractor && (
+        <ContractorDetailsDialog
+          open={isContractorDialogOpen}
+          onOpenChange={setIsContractorDialogOpen}
+          contractor={selectedContractor}
+          onContractorUpdated={() => {
+            // Refresh job to get updated contractor data
+            const fetchJob = async () => {
+              try {
+                const tokenProvider = getTokenProvider()
+                if (tokenProvider) {
+                  const { client } = createApiClients(tokenProvider)
+                  const [data, contractorsData] = await Promise.all([
+                    client.getJobById(jobId),
+                    client.getContractors(null, null)
+                  ])
+                  if (data) {
+                    setJob(data)
+                  }
+                  const contractorMap = new Map<string, ContractorDto>()
+                  contractorsData.forEach(contractor => {
+                    if (contractor.id) {
+                      contractorMap.set(contractor.id, contractor)
+                    }
+                  })
+                  setContractors(contractorMap)
+                }
+              } catch (err) {
+                console.error("Error refreshing job after contractor update:", err)
+              }
+            }
+            fetchJob()
+          }}
+        />
+      )}
     </div>
   )
 }

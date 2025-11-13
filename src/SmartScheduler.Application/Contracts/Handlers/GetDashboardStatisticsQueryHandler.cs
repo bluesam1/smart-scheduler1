@@ -67,22 +67,23 @@ public class GetDashboardStatisticsQueryHandler : IRequestHandler<GetDashboardSt
         var contractorsChangeToday = contractorsToday;
         var contractorsChangeWeek = contractorsThisWeek - contractorsLastWeek;
 
-        // Get pending jobs (Created status)
+        // Get pending jobs (Scheduled status with no assignment)
         var allJobs = await _jobRepository.GetAllAsync(cancellationToken);
-        var pendingJobs = allJobs.Where(j => j.Status == JobStatus.Created).ToList();
+        var pendingJobs = allJobs.Where(j => j.Status == JobStatus.Scheduled && j.AssignmentStatus == AssignmentStatus.Unassigned).ToList();
         var pendingJobsCount = pendingJobs.Count;
         var unassignedJobsCount = pendingJobs.Count(j => j.AssignmentStatus == AssignmentStatus.Unassigned);
 
         // Get pending jobs from a week ago
         var pendingJobsToday = pendingJobs.Count(j => j.CreatedAt >= todayStart);
         var pendingJobsThisWeek = pendingJobs.Count(j => j.CreatedAt >= weekStart);
-        var pendingJobsLastWeek = allJobs.Count(j => j.Status == JobStatus.Created && 
+        var pendingJobsLastWeek = allJobs.Count(j => j.Status == JobStatus.Scheduled && 
+            j.AssignmentStatus == AssignmentStatus.Unassigned &&
             j.CreatedAt >= weekStart.AddDays(-7) && j.CreatedAt < weekStart);
         var pendingJobsChangeToday = pendingJobsToday;
         var pendingJobsChangeWeek = pendingJobsThisWeek - pendingJobsLastWeek;
 
         // Calculate average assignment time
-        var assignedJobs = allJobs.Where(j => j.Status != JobStatus.Created && j.AssignedContractors.Any()).ToList();
+        var assignedJobs = allJobs.Where(j => j.AssignedContractors.Any()).ToList();
         var assignmentTimes = new List<TimeSpan>();
         
         foreach (var job in assignedJobs)

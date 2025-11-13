@@ -214,7 +214,10 @@ public class GetRecommendationsQueryHandler : IRequestHandler<GetRecommendations
                 Confidence = s.Confidence
             }).ToList(),
             Distance = Math.Round(c.DistanceMeters, 0),
-            Eta = c.EtaMinutes
+            Eta = c.EtaMinutes,
+            ContractorBaseLocation = c.Contractor.BaseLocation.FormattedAddress 
+                ?? c.Contractor.BaseLocation.Address 
+                ?? $"{c.Contractor.BaseLocation.City}, {c.Contractor.BaseLocation.State}"
         }).ToList();
 
         // Get config version
@@ -239,31 +242,36 @@ public class GetRecommendationsQueryHandler : IRequestHandler<GetRecommendations
             }
         }, cancellationToken);
 
-        // Publish RecommendationReady event (fire-and-forget, don't block response)
-        _ = Task.Run(async () =>
+        // Publish RecommendationReady event only if explicitly requested (e.g., from /recalculate endpoint)
+        // Regular fetches should not trigger events to avoid infinite loops
+        if (request.PublishEvent)
         {
-            try
+            _ = Task.Run(async () =>
             {
-                // MVP uses default region - can be enhanced to derive from job location or user context
-                const string region = "Default";
-                await _realtimePublisher.PublishRecommendationReadyAsync(
-                    job.Id.ToString(),
-                    requestId.ToString(),
-                    region,
-                    configVersion,
-                    cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to publish RecommendationReady event for job {JobId}", job.Id);
-            }
-        }, cancellationToken);
+                try
+                {
+                    // MVP uses default region - can be enhanced to derive from job location or user context
+                    const string region = "Default";
+                    await _realtimePublisher.PublishRecommendationReadyAsync(
+                        job.Id.ToString(),
+                        requestId.ToString(),
+                        region,
+                        configVersion,
+                        cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to publish RecommendationReady event for job {JobId}", job.Id);
+                }
+            }, cancellationToken);
+        }
 
         return new RecommendationResponse
         {
             RequestId = requestId,
             JobId = job.Id,
             Recommendations = recommendations,
+            BestRecommendationContractorId = topCandidates.FirstOrDefault()?.Contractor.Id,
             ConfigVersion = configVersion,
             GeneratedAt = generatedAt
         };

@@ -31,7 +31,7 @@ public class CancelJobCommandHandlerTests
             _consistencyCheckerMock.Object);
     }
 
-    private Job CreateTestJob(Guid id, JobStatus status = JobStatus.Assigned)
+    private Job CreateTestJob(Guid id, JobStatus status = JobStatus.Scheduled)
     {
         var location = new GeoLocation(
             40.7128, -74.0060, "123 Main St", "New York", "NY", "10001", "US",
@@ -71,7 +71,7 @@ public class CancelJobCommandHandlerTests
         var contractorId = Guid.NewGuid();
         var assignmentId = Guid.NewGuid();
         
-        var job = CreateTestJob(jobId, JobStatus.Assigned);
+        var job = CreateTestJob(jobId, JobStatus.Scheduled);
         var assignment = CreateTestAssignment(
             assignmentId,
             jobId,
@@ -120,7 +120,7 @@ public class CancelJobCommandHandlerTests
     {
         // Arrange
         var jobId = Guid.NewGuid();
-        var job = CreateTestJob(jobId, JobStatus.Assigned);
+        var job = CreateTestJob(jobId, JobStatus.Scheduled);
         
         var command = new CancelJobCommand
         {
@@ -175,7 +175,7 @@ public class CancelJobCommandHandlerTests
         var assignmentId1 = Guid.NewGuid();
         var assignmentId2 = Guid.NewGuid();
         
-        var job = CreateTestJob(jobId, JobStatus.Assigned);
+        var job = CreateTestJob(jobId, JobStatus.Scheduled);
         var assignment1 = CreateTestAssignment(
             assignmentId1,
             jobId,
@@ -224,7 +224,7 @@ public class CancelJobCommandHandlerTests
         var contractorId = Guid.NewGuid();
         var assignmentId = Guid.NewGuid();
         
-        var job = CreateTestJob(jobId, JobStatus.Assigned);
+        var job = CreateTestJob(jobId, JobStatus.Scheduled);
         var assignment = CreateTestAssignment(
             assignmentId,
             jobId,

@@ -38,6 +38,8 @@ public class GetJobsQueryHandler : IRequestHandler<GetJobsQuery, IReadOnlyList<J
             jobs = await _repository.GetAllAsync(cancellationToken);
         }
 
+        // Convert to DTOs without travel enrichment (too expensive for list view)
+        // Travel time will be calculated only when viewing individual job details
         var result = jobs
             .Select(j => j.ToDto())
             .ToList();
@@ -49,5 +51,9 @@ public class GetJobsQueryHandler : IRequestHandler<GetJobsQuery, IReadOnlyList<J
 
         return result;
     }
+
+    // NOTE: Travel time enrichment removed from GetJobs to avoid performance issues
+    // It was causing hundreds of API calls to OpenRouteService when loading the dashboard
+    // Travel time is still calculated in GetJobById for individual job detail views
 }
 

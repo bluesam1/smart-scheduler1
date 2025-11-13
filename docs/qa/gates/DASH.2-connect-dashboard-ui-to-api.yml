@@ -62,3 +62,4 @@ recommendations:
     - action: "Add explicit cache header handling if needed"
       refs: ["frontend/components/stats-overview.tsx"]
 
+

@@ -13,7 +13,7 @@ import { WorkingScheduleSettings } from "./working-schedule-settings"
 import { ExceptionsManager } from "./exceptions-manager"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useSettings } from "@/lib/settings-context"
-import { SkillCombobox } from "@/components/ui/skill-combobox"
+import { MultiSelect } from "@/components/ui/multi-select"
 import { createApiClients } from "@/lib/api/api-client-config"
 import { useAuth } from "@/lib/auth/auth-context"
 import { formatErrorForDisplay, isAuthenticationError } from "@/lib/api/error-handling"
@@ -296,11 +296,12 @@ export function ContractorDetailsDialog({ open, onOpenChange, contractor, onCont
 
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold">Skills & Certifications</h3>
-                  <SkillCombobox
-                    availableSkills={availableSkills}
-                    selectedSkills={editedSkills}
-                    onSkillsChange={setEditedSkills}
+                  <MultiSelect
+                    options={availableSkills}
+                    selected={editedSkills}
+                    onChange={setEditedSkills}
                     placeholder="Select or type skills..."
+                    disabled={isSaving}
                   />
                 </div>
               </div>

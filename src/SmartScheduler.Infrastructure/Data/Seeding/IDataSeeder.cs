@@ -20,3 +20,4 @@ public interface IDataSeeder
     Task ClearAsync(SmartSchedulerDbContext context, CancellationToken cancellationToken = default);
 }
 
+

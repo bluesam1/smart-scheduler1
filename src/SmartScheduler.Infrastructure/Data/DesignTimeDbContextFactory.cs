@@ -35,3 +35,4 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<SmartSched
     }
 }
 
+

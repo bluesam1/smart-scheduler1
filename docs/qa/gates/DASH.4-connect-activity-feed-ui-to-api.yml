@@ -62,3 +62,4 @@ recommendations:
     - action: "Add activity type filtering UI"
       refs: ["frontend/components/activity-feed.tsx"]
 
+

@@ -10,3 +10,4 @@ public record DeleteContractorCommand : IRequest
     public Guid Id { get; init; }
 }
 
+

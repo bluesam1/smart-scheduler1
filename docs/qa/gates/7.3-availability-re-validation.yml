@@ -67,3 +67,4 @@ recommendations:
     - action: "Consider caching contractor working hours for performance"
       refs: ["src/SmartScheduler.Application/Contracts/Services/AvailabilityRevalidator.cs:40"]
 
+

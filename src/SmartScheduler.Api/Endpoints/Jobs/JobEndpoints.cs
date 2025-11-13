@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using SmartScheduler.Application.Contracts.Commands;
 using SmartScheduler.Application.Contracts.DTOs;
 using SmartScheduler.Application.Contracts.Queries;
+using SmartScheduler.Application.Recommendations.DTOs;
+using SmartScheduler.Application.Recommendations.Queries;
 
 namespace SmartScheduler.Api.Endpoints.Jobs;
 
@@ -61,6 +63,50 @@ public static class JobEndpoints
         .WithSummary("Get job by ID")
         .WithDescription("Retrieves a specific job by its unique identifier.")
         .Produces<JobDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
+
+        // GET /api/jobs/{id}/latest-recommendations - Get latest cached recommendations for a job
+        group.MapGet("/{id:guid}/latest-recommendations", async (
+            IMediator mediator,
+            Guid id,
+            CancellationToken cancellationToken) =>
+        {
+            // Get the job to check if it has cached recommendations
+            var jobQuery = new GetJobByIdQuery { Id = id };
+            var job = await mediator.Send(jobQuery, cancellationToken);
+
+            if (job == null)
+            {
+                return Results.NotFound(new { message = $"Job with ID {id} not found." });
+            }
+
+            if (job.LastRecommendationAuditId == null)
+            {
+                return Results.NotFound(new { message = "No recommendations calculated yet. Please trigger recommendation calculation first." });
+            }
+
+            // Fetch fresh recommendations (ensures up-to-date slot data)
+            // Don't publish event - this is just a fetch, not a recalculation
+            var recommendationsQuery = new GetRecommendationsQuery
+            {
+                JobId = id,
+                DesiredDate = DateOnly.FromDateTime(job.DesiredDate),
+                ServiceWindow = job.ServiceWindow != null ? new SmartScheduler.Application.Recommendations.DTOs.TimeWindowDto
+                {
+                    Start = job.ServiceWindow.Start,
+                    End = job.ServiceWindow.End
+                } : null,
+                MaxResults = 10,
+                PublishEvent = false // Regular fetch should not trigger events
+            };
+
+            var recommendations = await mediator.Send(recommendationsQuery, cancellationToken);
+            return Results.Ok(recommendations);
+        })
+        .WithName("GetLatestRecommendations")
+        .WithSummary("Get latest recommendations for a job")
+        .WithDescription("Retrieves the most recent contractor recommendations for a job. Returns 404 if no recommendations have been calculated.")
+        .Produces<RecommendationResponse>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound);
 
         // POST /api/jobs - Create new job

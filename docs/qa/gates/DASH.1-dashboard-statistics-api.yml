@@ -71,3 +71,4 @@ recommendations:
     - action: "Implement cache invalidation on domain events"
       refs: ["src/SmartScheduler.Application/Contracts/Handlers/GetDashboardStatisticsQueryHandler.cs"]
 
+

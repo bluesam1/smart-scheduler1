@@ -15,3 +15,4 @@ public interface IEventLogRepository
     Task AddAsync(EventLog eventLog, CancellationToken cancellationToken = default);
 }
 
+

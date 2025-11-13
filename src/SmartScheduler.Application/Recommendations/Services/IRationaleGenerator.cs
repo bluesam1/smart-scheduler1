@@ -16,3 +16,4 @@ public interface IRationaleGenerator
     string GenerateRationale(ScoreBreakdown scoreBreakdown, double finalScore);
 }
 
+

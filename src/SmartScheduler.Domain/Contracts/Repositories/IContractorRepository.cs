@@ -38,3 +38,4 @@ public interface IContractorRepository
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }
 
+

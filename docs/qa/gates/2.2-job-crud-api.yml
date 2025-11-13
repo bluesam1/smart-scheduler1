@@ -65,3 +65,4 @@ recommendations:
     - action: "Add service tests for AddressValidationService and TimezoneService"
       refs: ["src/SmartScheduler.Infrastructure.Tests/Services/"]
 
+

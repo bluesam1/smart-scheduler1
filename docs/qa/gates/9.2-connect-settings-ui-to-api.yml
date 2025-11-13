@@ -57,3 +57,4 @@ recommendations:
     - action: "Consider optimistic UI updates for better UX"
       refs: ["frontend/lib/settings-context.tsx"]
 
+

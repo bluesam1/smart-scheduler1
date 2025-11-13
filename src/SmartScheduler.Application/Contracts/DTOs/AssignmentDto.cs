@@ -29,3 +29,4 @@ public record AssignJobRequest
     public string Source { get; init; } = "Auto"; // "Auto" or "Manual"
 }
 
+

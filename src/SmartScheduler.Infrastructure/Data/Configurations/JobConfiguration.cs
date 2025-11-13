@@ -53,6 +53,12 @@ public class JobConfiguration : IEntityTypeConfiguration<Job>
         builder.Property(j => j.UpdatedAt)
             .IsRequired();
 
+        builder.Property(j => j.LastRecommendationAuditId)
+            .IsRequired(false);
+
+        // Create index on LastRecommendationAuditId for faster lookups
+        builder.HasIndex(j => j.LastRecommendationAuditId);
+
         // Configure Location value object (owned entity)
         builder.OwnsOne(j => j.Location, location =>
         {

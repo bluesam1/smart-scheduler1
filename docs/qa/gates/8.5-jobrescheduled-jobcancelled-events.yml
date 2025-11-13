@@ -38,3 +38,4 @@ recommendations:
     - action: "Consider adding dedicated event publishing tests"
       refs: ["src/SmartScheduler.Realtime/Services/SignalRRealtimePublisher.cs"]
 
+

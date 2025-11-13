@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useSettings } from "@/lib/settings-context"
-import { SkillCombobox } from "@/components/ui/skill-combobox"
+import { MultiSelect } from "@/components/ui/multi-select"
 import { useState, useEffect } from "react"
 import { createApiClients } from "@/lib/api/api-client-config"
 import { useAuth } from "@/lib/auth/auth-context"
@@ -297,11 +297,12 @@ export function AddContractorDialog({ open, onOpenChange, onContractorAdded }: A
           
           <div className="grid gap-2">
             <Label>Skills & Certifications</Label>
-            <SkillCombobox
-              availableSkills={skills}
-              selectedSkills={selectedSkills}
-              onSkillsChange={setSelectedSkills}
+            <MultiSelect
+              options={skills}
+              selected={selectedSkills}
+              onChange={setSelectedSkills}
               placeholder="Select or type skills..."
+              disabled={isSubmitting}
             />
           </div>
         </div>

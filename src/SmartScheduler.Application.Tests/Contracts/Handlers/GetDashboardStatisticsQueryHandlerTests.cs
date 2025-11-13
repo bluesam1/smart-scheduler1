@@ -75,8 +75,8 @@ public class GetDashboardStatisticsQueryHandlerTests
             DateTime.UtcNow.AddDays(1),
             new List<string> { "Skill1" });
         
-        // Update status if needed (Job constructor sets it to Created)
-        if (status != JobStatus.Created)
+        // Update status if needed (Job constructor sets it to Scheduled)
+        if (status != JobStatus.Scheduled)
         {
             job.UpdateStatus(status);
         }
@@ -156,9 +156,9 @@ public class GetDashboardStatisticsQueryHandlerTests
     {
         // Arrange
         var query = new GetDashboardStatisticsQuery();
-        var job1 = CreateTestJob(Guid.NewGuid(), JobStatus.Created);
-        var job2 = CreateTestJob(Guid.NewGuid(), JobStatus.Created);
-        var job3 = CreateTestJob(Guid.NewGuid(), JobStatus.Assigned);
+        var job1 = CreateTestJob(Guid.NewGuid(), JobStatus.Scheduled);
+        var job2 = CreateTestJob(Guid.NewGuid(), JobStatus.Scheduled);
+        var job3 = CreateTestJob(Guid.NewGuid(), JobStatus.Scheduled);
 
         _contractorRepositoryMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Contractor>());

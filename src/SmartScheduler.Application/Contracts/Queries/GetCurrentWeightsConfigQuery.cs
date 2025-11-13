@@ -8,3 +8,4 @@ namespace SmartScheduler.Application.Contracts.Queries;
 /// </summary>
 public record GetCurrentWeightsConfigQuery : IRequest<WeightsConfigResponseDto?>;
 
+

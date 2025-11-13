@@ -82,3 +82,4 @@ public class GetCurrentWeightsConfigQueryHandler : IRequestHandler<GetCurrentWei
     }
 }
 
+

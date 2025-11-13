@@ -11,3 +11,4 @@ public record GetJobByIdQuery : IRequest<JobDto?>
     public Guid Id { get; init; }
 }
 
+

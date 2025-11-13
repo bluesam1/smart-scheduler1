@@ -51,3 +51,4 @@ public record GeoLocation
     public bool IsValid => Latitude >= -90 && Latitude <= 90 && Longitude >= -180 && Longitude <= 180;
 }
 
+

@@ -47,5 +47,10 @@ public record RecommendationDto
     /// Estimated travel time in minutes.
     /// </summary>
     public int Eta { get; init; }
+
+    /// <summary>
+    /// Contractor's base location address.
+    /// </summary>
+    public string? ContractorBaseLocation { get; init; }
 }
 

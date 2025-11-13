@@ -5,10 +5,9 @@ namespace SmartScheduler.Domain.Contracts.ValueObjects;
 /// </summary>
 public enum JobStatus
 {
-    Created = 0,
-    Assigned = 1,
-    InProgress = 2,
-    Completed = 3,
-    Cancelled = 4
+    Scheduled = 0,
+    InProgress = 1,
+    Completed = 2,
+    Canceled = 3
 }
 

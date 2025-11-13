@@ -12,3 +12,4 @@ public record GetContractorsQuery : IRequest<IReadOnlyList<ContractorDto>>
     public int? Limit { get; init; }
 }
 
+

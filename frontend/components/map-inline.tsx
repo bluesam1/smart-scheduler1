@@ -25,12 +25,12 @@ export function MapInline({ locations, height = "300px" }: MapInlineProps) {
   return (
     <div className="w-full bg-muted/20 rounded-lg border-2 border-border relative overflow-hidden" style={{ height }}>
       {/* Mock Map Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-green-50 dark:from-blue-950/20 dark:to-green-950/20">
-        <svg className="w-full h-full opacity-10">
-          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-green-50 dark:from-slate-800 dark:to-slate-900">
+        <svg className="w-full h-full opacity-10 dark:opacity-20">
+          <pattern id="grid-inline" width="40" height="40" patternUnits="userSpaceOnUse">
             <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1" />
           </pattern>
-          <rect width="100%" height="100%" fill="url(#grid)" />
+          <rect width="100%" height="100%" fill="url(#grid-inline)" />
         </svg>
       </div>
 

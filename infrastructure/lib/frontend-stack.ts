@@ -75,7 +75,12 @@ export class FrontendStack extends cdk.Stack {
     // The attrEndpointUrl attribute is not available during stack creation
     // Set NEXT_PUBLIC_API_URL environment variable in Amplify Console after deployment
     // Or use: aws elasticbeanstalk describe-environments --environment-names production --query 'Environments[0].EndpointURL' --output text
-    const apiUrl = process.env.API_URL || 'http://PLACEHOLDER-API-URL'; // Will be updated after API stack deployment
+    // Ensure HTTPS is used (Amplify requires HTTPS for custom rules)
+    const apiUrl = process.env.API_URL 
+      ? (process.env.API_URL.startsWith('http://') 
+          ? process.env.API_URL.replace('http://', 'https://') 
+          : process.env.API_URL)
+      : 'https://PLACEHOLDER-API-URL'; // Will be updated after API stack deployment
 
     // Create IAM role for Amplify app
     const amplifyRole = new iam.Role(this, 'AmplifyRole', {
@@ -101,7 +106,8 @@ export class FrontendStack extends cdk.Stack {
           })
         : undefined,
       // If no GitHub token, you'll need to connect the repository manually via Amplify Console
-      // Build spec for Next.js - Amplify will use this to build the application
+      // Build spec for Next.js static export - Amplify will use this to build the application
+      // Note: Next.js must be configured with output: 'export' in next.config.mjs for static export
       buildSpec: codebuild.BuildSpec.fromObjectToYaml({
         version: '1.0',
         frontend: {
@@ -125,11 +131,12 @@ export class FrontendStack extends cdk.Stack {
             },
           },
           artifacts: {
-            baseDirectory: 'frontend/.next',
+            // For Next.js static export, the output is in the 'out' directory
+            baseDirectory: 'frontend/out',
             files: ['**/*'],
           },
           cache: {
-            paths: ['frontend/node_modules/**/*'],
+            paths: ['frontend/node_modules/**/*', 'frontend/.next/cache/**/*'],
           },
         },
       }),
@@ -151,13 +158,9 @@ export class FrontendStack extends cdk.Stack {
         NODE_OPTIONS: '--max-old-space-size=4096',
       },
       customRules: [
-        // Next.js App Router rewrites
-        {
-          source: '/api/<*>',
-          target: `${apiUrl}/api/<*>`,
-          status: amplify.RedirectStatus.REWRITE,
-        },
         // Next.js catch-all for client-side routing
+        // Note: API calls are made directly from the frontend using NEXT_PUBLIC_API_URL
+        // No need to proxy API calls through Amplify
         {
           source: '/<*>',
           target: '/index.html',

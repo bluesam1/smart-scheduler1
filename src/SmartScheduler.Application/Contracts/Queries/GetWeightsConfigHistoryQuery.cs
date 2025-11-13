@@ -8,3 +8,4 @@ namespace SmartScheduler.Application.Contracts.Queries;
 /// </summary>
 public record GetWeightsConfigHistoryQuery : IRequest<IReadOnlyList<WeightsConfigHistoryItemDto>>;
 
+

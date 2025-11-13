@@ -12,3 +12,4 @@ public record UpdateContractorRatingCommand : IRequest<ContractorDto>
     public int Rating { get; init; }
 }
 
+

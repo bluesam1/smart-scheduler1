@@ -13,3 +13,4 @@ public record UpdateJobStatusCommand : IRequest<JobDto>
     public JobStatus NewStatus { get; init; }
 }
 
+

@@ -21,6 +21,11 @@ public record RecommendationResponse
     public IReadOnlyList<RecommendationDto> Recommendations { get; init; } = Array.Empty<RecommendationDto>();
 
     /// <summary>
+    /// ID of the best (highest-scoring) contractor recommendation, or null if no recommendations.
+    /// </summary>
+    public Guid? BestRecommendationContractorId { get; init; }
+
+    /// <summary>
     /// Configuration version used for scoring weights.
     /// </summary>
     public int ConfigVersion { get; init; }

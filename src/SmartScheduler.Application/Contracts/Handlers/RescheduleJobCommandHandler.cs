@@ -58,15 +58,15 @@ public class RescheduleJobCommandHandler : IRequestHandler<RescheduleJobCommand,
             throw new KeyNotFoundException($"Job with ID {request.JobId} not found.");
         }
 
-        // Cannot reschedule completed or cancelled jobs
+        // Cannot reschedule completed or canceled jobs
         if (job.Status == JobStatus.Completed)
         {
             throw new InvalidOperationException("Cannot reschedule a completed job.");
         }
 
-        if (job.Status == JobStatus.Cancelled)
+        if (job.Status == JobStatus.Canceled)
         {
-            throw new InvalidOperationException("Cannot reschedule a cancelled job.");
+            throw new InvalidOperationException("Cannot reschedule a canceled job.");
         }
 
         // Get all active assignments for this job

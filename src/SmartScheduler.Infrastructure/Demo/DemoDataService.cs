@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using SmartScheduler.Domain.Contracts.Entities;
 using SmartScheduler.Domain.Contracts.Repositories;
@@ -28,6 +29,7 @@ public class DemoDataService
     private readonly SmartSchedulerDbContext _context;
     private readonly ISystemConfigurationRepository _configRepository;
     private readonly IWeightsConfigRepository _weightsRepository;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<DemoDataService> _logger;
     private readonly AddressData _addressData;
     private readonly Random _random;
@@ -36,11 +38,13 @@ public class DemoDataService
         SmartSchedulerDbContext context,
         ISystemConfigurationRepository configRepository,
         IWeightsConfigRepository weightsRepository,
+        IMemoryCache cache,
         ILogger<DemoDataService> logger)
     {
         _context = context;
         _configRepository = configRepository;
         _weightsRepository = weightsRepository;
+        _cache = cache;
         _logger = logger;
         _addressData = new AddressData();
         
@@ -56,6 +60,13 @@ public class DemoDataService
         var stopwatch = Stopwatch.StartNew();
         
         _logger.LogInformation("Starting demo data generation...");
+
+        // Clear cache to ensure fresh data
+        if (_cache is MemoryCache memCache)
+        {
+            memCache.Compact(1.0); // Remove all cached items
+            _logger.LogInformation("Cache cleared");
+        }
 
         // Load system configuration
         var jobTypesConfig = await _configRepository.GetByTypeAsync(ConfigurationType.JobTypes, cancellationToken);
@@ -264,9 +275,24 @@ public class DemoDataService
             var priorityRoll = _random.Next(100);
             var priority = priorityRoll < 70 ? Priority.Normal : priorityRoll < 90 ? Priority.High : Priority.Rush;
 
-            // Historical dates over past 6 months
-            var daysAgo = _random.Next(1, 181);
-            var desiredDate = timestamp.AddDays(-daysAgo).Date;
+            // Job date distribution:
+            // - 15% past jobs (1-60 days ago) - some already assigned/canceled
+            // - 85% future jobs (1-90 days ahead) - many unassigned, some assigned
+            DateTime desiredDate;
+            var isPastJob = _random.Next(100) < 15;
+            
+            if (isPastJob)
+            {
+                // Past jobs: 1-60 days ago
+                var daysAgo = _random.Next(1, 61);
+                desiredDate = timestamp.AddDays(-daysAgo).Date;
+            }
+            else
+            {
+                // Future jobs: 1-90 days ahead
+                var daysAhead = _random.Next(1, 91);
+                desiredDate = timestamp.AddDays(daysAhead).Date;
+            }
             
             // Service window (8 hours during business hours)
             var startHour = _random.Next(7, 16); // 7am-4pm start
@@ -305,174 +331,169 @@ public class DemoDataService
 
         foreach (var job in jobs)
         {
-            // Determine if this job should be cancelled (5% chance)
-            var shouldCancel = _random.Next(100) < 5;
-            if (shouldCancel)
-            {
-                job.Cancel("Demo cancellation");
-                continue;
-            }
-
-            // Determine if this job should get an assignment (85% chance)
-            // This leaves ~15% unassigned + 5% cancelled = ~20% without active assignments
-            var shouldAssign = _random.Next(100) < 85;
-            if (!shouldAssign)
-            {
-                // Leave job in Created status (unassigned)
-                continue;
-            }
-
-            // Find compatible contractors (those with matching skills)
-            var compatibleContractors = contractors
-                .Where(c => job.RequiredSkills.All(skill => c.Skills.Contains(skill)))
-                .ToList();
-
-            if (compatibleContractors.Count == 0)
-            {
-                // No compatible contractors, leave job unassigned
-                continue;
-            }
-
-            // Generate candidate scores for audit
-            var candidates = GenerateCandidateScores(job, compatibleContractors);
-
-            // Select contractor (weighted by score)
-            var selectedContractor = SelectContractorWeighted(compatibleContractors, candidates);
-
-            // Generate assignment times
-            var startUtc = job.ServiceWindow.Start.AddHours(_random.Next(0, 2));
-            var endUtc = startUtc.AddMinutes(job.Duration);
-
-            // Assignment source: 60% auto, 40% manual (showing system is working)
-            var source = _random.Next(100) < 60 ? AssignmentSource.Auto : AssignmentSource.Manual;
-
-            // Determine assignment status based on job timeline
-            // Completed: jobs more than 7 days old (60%)
-            // InProgress: jobs 1-7 days old (10%)
-            // Confirmed: future jobs (30%)
-            AssignmentEntityStatus assignmentStatus;
-            JobStatus jobStatus;
+            var isPastJob = job.DesiredDate < timestamp.Date;
             
-            var daysFromNow = (job.DesiredDate - timestamp.Date).Days;
+            // PAST JOBS: Must be either Canceled OR Completed with assignment
+            if (isPastJob)
+            {
+                // 5% of past jobs are canceled
+                var shouldCancel = _random.Next(100) < 5;
+                if (shouldCancel)
+                {
+                    job.Cancel("Demo cancellation");
+                    continue; // No assignment for canceled jobs
+                }
+                
+                // 95% of past jobs MUST be completed with an assignment
+                // Find compatible contractors
+                var compatibleContractors = contractors
+                    .Where(c => job.RequiredSkills.All(skill => c.Skills.Contains(skill)))
+                    .ToList();
+
+                if (compatibleContractors.Count == 0)
+                {
+                    // If no compatible contractors, cancel the job instead of leaving it unassigned
+                    job.Cancel("No compatible contractors available");
+                    continue;
+                }
+
+                // Generate candidate scores for audit
+                var candidates = GenerateCandidateScores(job, compatibleContractors);
+
+                // Select contractor (weighted by score)
+                var selectedContractor = SelectContractorWeighted(compatibleContractors, candidates);
+
+                // Generate assignment times
+                var startUtc = job.ServiceWindow.Start.AddHours(_random.Next(0, 2));
+                var endUtc = startUtc.AddMinutes(job.Duration);
+
+                // Assignment source: 60% auto, 40% manual
+                var source = _random.Next(100) < 60 ? AssignmentSource.Auto : AssignmentSource.Manual;
             
-            if (daysFromNow < -7)
-            {
-                // Old jobs should be completed
-                assignmentStatus = AssignmentEntityStatus.Completed;
-                jobStatus = JobStatus.Completed;
-            }
-            else if (daysFromNow < 0 && daysFromNow >= -7)
-            {
-                // Recent past jobs could be in progress or completed
-                var isCompleted = _random.Next(100) < 70; // 70% completed, 30% in progress
-                if (isCompleted)
-                {
-                    assignmentStatus = AssignmentEntityStatus.Completed;
-                    jobStatus = JobStatus.Completed;
-                }
-                else
-                {
-                    assignmentStatus = AssignmentEntityStatus.InProgress;
-                    jobStatus = JobStatus.InProgress;
-                }
-            }
-            else
-            {
-                // Future jobs should be confirmed/assigned
-                assignmentStatus = AssignmentEntityStatus.Confirmed;
-                jobStatus = JobStatus.Assigned;
-            }
+                // Create the assignment
+                var assignment = new Assignment(
+                    Guid.NewGuid(),
+                    job.Id,
+                    selectedContractor.Id,
+                    startUtc,
+                    endUtc,
+                    source
+                );
 
-            // Create the assignment
-            var assignment = new Assignment(
-                Guid.NewGuid(),
-                job.Id,
-                selectedContractor.Id,
-                startUtc,
-                endUtc,
-                source
-            );
-
-            // Update assignment status to match determined status
-            if (assignmentStatus == AssignmentEntityStatus.Confirmed)
-            {
-                assignment.Confirm();
-            }
-            else if (assignmentStatus == AssignmentEntityStatus.InProgress)
-            {
-                assignment.Confirm();
-                assignment.MarkInProgress();
-            }
-            else if (assignmentStatus == AssignmentEntityStatus.Completed)
-            {
+                // Mark assignment as completed
                 assignment.Confirm();
                 assignment.MarkInProgress();
                 assignment.MarkCompleted();
-            }
 
-            assignments.Add(assignment);
+                assignments.Add(assignment);
 
-            // Update job with assignment and status
-            job.AssignContractor(selectedContractor.Id, startUtc, endUtc);
-            
-            // Update job status to match assignment status
-            if (jobStatus == JobStatus.InProgress && job.Status == JobStatus.Assigned)
-            {
+                // Update job with assignment and status
+                job.AssignContractor(selectedContractor.Id, startUtc, endUtc);
+                
+                // Transition job to completed status
                 job.UpdateStatus(JobStatus.InProgress);
-            }
-            else if (jobStatus == JobStatus.Completed && job.Status != JobStatus.Completed)
-            {
-                // Transition through valid states
-                if (job.Status == JobStatus.Created)
-                {
-                    job.UpdateStatus(JobStatus.Assigned);
-                }
-                if (job.Status == JobStatus.Assigned)
-                {
-                    job.UpdateStatus(JobStatus.InProgress);
-                }
                 job.UpdateStatus(JobStatus.Completed);
+
+                // Create audit record
+                CreateAuditRecord(job, selectedContractor, candidates, configVersion, auditRecords);
+                
+                continue; // Done with this past job
+            }
+            
+            // FUTURE JOBS: Can be unassigned (60%) or assigned/scheduled (40%)
+            var futureCompatibleContractors = contractors
+                .Where(c => job.RequiredSkills.All(skill => c.Skills.Contains(skill)))
+                .ToList();
+
+            if (futureCompatibleContractors.Count == 0)
+            {
+                // No compatible contractors, leave job unassigned without recommendations
+                continue;
             }
 
-            // Create audit record
-            var requestPayload = new
-            {
-                jobId = job.Id,
-                desiredDate = job.DesiredDate,
-                serviceWindow = new { start = job.ServiceWindow.Start, end = job.ServiceWindow.End },
-                maxResults = 10
-            };
+            // Generate candidate scores and audit record for ALL future jobs (even unassigned ones)
+            var futureCandidates = GenerateCandidateScores(job, futureCompatibleContractors);
+            var futureSelectedContractor = SelectContractorWeighted(futureCompatibleContractors, futureCandidates);
 
-            var candidatesJson = candidates.Select(c => new
-            {
-                contractorId = c.contractorId,
-                finalScore = c.score,
-                perFactorScores = new
-                {
-                    availability = c.availabilityScore,
-                    rating = c.ratingScore,
-                    distance = c.distanceScore,
-                    rotation = 0
-                },
-                rationale = c.rationale,
-                wasSelected = c.contractorId == selectedContractor.Id
-            }).ToList();
+            // Create audit record for recommendations (whether assigned or not)
+            CreateAuditRecord(job, futureSelectedContractor, futureCandidates, configVersion, auditRecords);
 
-            var auditRecord = new AuditRecommendation(
+            // Decide if this future job should be assigned (40% chance)
+            var shouldAssignFutureJob = _random.Next(100) < 40;
+            if (!shouldAssignFutureJob)
+            {
+                // Leave future job in Scheduled status (unassigned) - but recommendations are already saved
+                continue;
+            }
+
+            // Assign the future job
+            var futureStartUtc = job.ServiceWindow.Start.AddHours(_random.Next(0, 2));
+            var futureEndUtc = futureStartUtc.AddMinutes(job.Duration);
+            var futureSource = _random.Next(100) < 60 ? AssignmentSource.Auto : AssignmentSource.Manual;
+
+            var futureAssignment = new Assignment(
                 Guid.NewGuid(),
                 job.Id,
-                JsonSerializer.Serialize(requestPayload),
-                JsonSerializer.Serialize(candidatesJson),
-                configVersion,
-                "system", // Selection actor
-                selectedContractor.Id
+                futureSelectedContractor.Id,
+                futureStartUtc,
+                futureEndUtc,
+                futureSource
             );
 
-            auditRecords.Add(auditRecord);
+            // Future jobs are just confirmed (scheduled)
+            futureAssignment.Confirm();
+            assignments.Add(futureAssignment);
+
+            // Update job with assignment (status remains Scheduled)
+            job.AssignContractor(futureSelectedContractor.Id, futureStartUtc, futureEndUtc);
         }
 
         return (assignments, auditRecords);
     }
+
+    private void CreateAuditRecord(
+        Job job, 
+        Contractor selectedContractor, 
+        List<(Guid contractorId, double score, double availabilityScore, double ratingScore, double distanceScore, string rationale)> candidates,
+        int configVersion,
+        List<AuditRecommendation> auditRecords)
+    {
+        var requestPayload = new
+        {
+            jobId = job.Id,
+            desiredDate = job.DesiredDate,
+            serviceWindow = new { start = job.ServiceWindow.Start, end = job.ServiceWindow.End },
+            maxResults = 10
+        };
+
+        var candidatesJson = candidates.Select(c => new
+        {
+            contractorId = c.contractorId,
+            finalScore = c.score,
+            perFactorScores = new
+            {
+                availability = c.availabilityScore,
+                rating = c.ratingScore,
+                distance = c.distanceScore,
+                rotation = 0
+            },
+            rationale = c.rationale,
+            wasSelected = c.contractorId == selectedContractor.Id
+        }).ToList();
+
+        var auditRecord = new AuditRecommendation(
+            Guid.NewGuid(),
+            job.Id,
+            JsonSerializer.Serialize(requestPayload),
+            JsonSerializer.Serialize(candidatesJson),
+            configVersion,
+            "system",
+            selectedContractor.Id
+        );
+
+        auditRecords.Add(auditRecord);
+    }
+
 
     private List<(Guid contractorId, double score, double availabilityScore, double ratingScore, double distanceScore, string rationale)> 
         GenerateCandidateScores(Job job, List<Contractor> compatibleContractors)

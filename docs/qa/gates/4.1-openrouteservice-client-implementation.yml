@@ -65,3 +65,4 @@ recommendations:
     - action: "Plan AWS Secrets Manager integration for production"
       refs: ["src/SmartScheduler.Infrastructure/ExternalServices/OpenRouteServiceClient.cs"]
 
+

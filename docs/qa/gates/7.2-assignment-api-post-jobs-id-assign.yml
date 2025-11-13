@@ -67,3 +67,4 @@ recommendations:
     - action: "Consider optimistic concurrency control for job updates"
       refs: ["src/SmartScheduler.Domain/Contracts/Entities/Job.cs"]
 
+

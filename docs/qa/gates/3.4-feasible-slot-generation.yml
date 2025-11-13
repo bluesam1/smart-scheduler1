@@ -43,3 +43,4 @@ recommendations:
     - action: "Consider performance tests for large contractor sets"
       refs: ["src/SmartScheduler.Domain.Tests/Scheduling/SlotGeneratorTests.cs"]
 
+

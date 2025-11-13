@@ -38,7 +38,7 @@ public class RescheduleJobCommandHandlerTests
             _consistencyCheckerMock.Object);
     }
 
-    private Job CreateTestJob(Guid id, JobStatus status = JobStatus.Assigned)
+    private Job CreateTestJob(Guid id, JobStatus status = JobStatus.Scheduled)
     {
         var location = new GeoLocation(
             40.7128, -74.0060, "123 Main St", "New York", "NY", "10001", "US",
@@ -59,17 +59,16 @@ public class RescheduleJobCommandHandlerTests
             new List<string> { "Skill1" });
         
         // Set status through valid transitions
-        if (status == JobStatus.Assigned)
+        if (status == JobStatus.InProgress)
         {
-            job.UpdateStatus(JobStatus.Assigned);
+            job.UpdateStatus(JobStatus.InProgress);
         }
         else if (status == JobStatus.Completed)
         {
-            job.UpdateStatus(JobStatus.Assigned);
             job.UpdateStatus(JobStatus.InProgress);
             job.UpdateStatus(JobStatus.Completed);
         }
-        else if (status == JobStatus.Cancelled)
+        else if (status == JobStatus.Canceled)
         {
             job.Cancel("Test cancellation");
         }
@@ -96,7 +95,7 @@ public class RescheduleJobCommandHandlerTests
         var contractorId = Guid.NewGuid();
         var assignmentId = Guid.NewGuid();
         
-        var job = CreateTestJob(jobId, JobStatus.Assigned);
+        var job = CreateTestJob(jobId, JobStatus.Scheduled);
         var previousStart = job.ServiceWindow.Start;
         var previousEnd = job.ServiceWindow.End;
         
@@ -256,7 +255,7 @@ public class RescheduleJobCommandHandlerTests
     {
         // Arrange
         var jobId = Guid.NewGuid();
-        var job = CreateTestJob(jobId, JobStatus.Cancelled);
+        var job = CreateTestJob(jobId, JobStatus.Canceled);
         
         var request = new RescheduleJobRequest
         {
@@ -289,7 +288,7 @@ public class RescheduleJobCommandHandlerTests
         var contractorId = Guid.NewGuid();
         var assignmentId = Guid.NewGuid();
         
-        var job = CreateTestJob(jobId, JobStatus.Assigned);
+        var job = CreateTestJob(jobId, JobStatus.Scheduled);
         var assignment = CreateTestAssignment(
             assignmentId,
             jobId,
@@ -336,7 +335,7 @@ public class RescheduleJobCommandHandlerTests
         var assignmentId = Guid.NewGuid();
         var conflictingAssignmentId = Guid.NewGuid();
         
-        var job = CreateTestJob(jobId, JobStatus.Assigned);
+        var job = CreateTestJob(jobId, JobStatus.Scheduled);
         var assignment = CreateTestAssignment(
             assignmentId,
             jobId,

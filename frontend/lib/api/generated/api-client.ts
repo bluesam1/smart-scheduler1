@@ -773,6 +773,1068 @@ export class Client {
         }
         return Promise.resolve<JobDto>(null as any);
     }
+
+    /**
+     * Get latest recommendations for a job
+     */
+    getLatestRecommendations(id: string): Promise<RecommendationResponse> {
+        let url_ = this.baseUrl + "/api/jobs/{id}/latest-recommendations";
+        if (id === undefined || id === null)
+            throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetLatestRecommendations(_response);
+        });
+    }
+
+    protected processGetLatestRecommendations(response: Response): Promise<RecommendationResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RecommendationResponse;
+            return result200;
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<RecommendationResponse>(null as any);
+    }
+
+    /**
+     * Update job status
+     */
+    updateJobStatus(id: string, request: UpdateJobStatusRequest): Promise<JobDto> {
+        let url_ = this.baseUrl + "/api/jobs/{id}/status";
+        if (id === undefined || id === null)
+            throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processUpdateJobStatus(_response);
+        });
+    }
+
+    protected processUpdateJobStatus(response: Response): Promise<JobDto> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as JobDto;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<JobDto>(null as any);
+    }
+
+    /**
+     * Assign job to contractor
+     */
+    assignJob(id: string, request: AssignJobRequest): Promise<AssignmentDto> {
+        let url_ = this.baseUrl + "/api/jobs/{id}/assign";
+        if (id === undefined || id === null)
+            throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processAssignJob(_response);
+        });
+    }
+
+    protected processAssignJob(response: Response): Promise<AssignmentDto> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 201) {
+            return response.text().then((_responseText) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssignmentDto;
+            return result201;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 409) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<AssignmentDto>(null as any);
+    }
+
+    /**
+     * Reschedule job
+     */
+    rescheduleJob(id: string, request: RescheduleJobRequest): Promise<JobDto> {
+        let url_ = this.baseUrl + "/api/jobs/{id}/reschedule";
+        if (id === undefined || id === null)
+            throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processRescheduleJob(_response);
+        });
+    }
+
+    protected processRescheduleJob(response: Response): Promise<JobDto> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as JobDto;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 409) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<JobDto>(null as any);
+    }
+
+    /**
+     * Cancel job
+     * @param request (optional) 
+     */
+    cancelJob(id: string, request?: CancelJobRequest | undefined): Promise<JobDto> {
+        let url_ = this.baseUrl + "/api/jobs/{id}/cancel";
+        if (id === undefined || id === null)
+            throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processCancelJob(_response);
+        });
+    }
+
+    protected processCancelJob(response: Response): Promise<JobDto> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as JobDto;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<JobDto>(null as any);
+    }
+
+    /**
+     * Get contractor recommendations
+     */
+    getRecommendations(request: RecommendationRequest): Promise<RecommendationResponse> {
+        let url_ = this.baseUrl + "/api/recommendations";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetRecommendations(_response);
+        });
+    }
+
+    protected processGetRecommendations(response: Response): Promise<RecommendationResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RecommendationResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<RecommendationResponse>(null as any);
+    }
+
+    /**
+     * Recalculate recommendations for a job
+     */
+    recalculateRecommendations(request: RecalculateRequest): Promise<RecommendationResponse> {
+        let url_ = this.baseUrl + "/api/recommendations/recalculate";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processRecalculateRecommendations(_response);
+        });
+    }
+
+    protected processRecalculateRecommendations(response: Response): Promise<RecommendationResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RecommendationResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<RecommendationResponse>(null as any);
+    }
+
+    /**
+     * List available job types
+     */
+    getJobTypes(): Promise<JobTypesResponseDto> {
+        let url_ = this.baseUrl + "/api/settings/job-types";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetJobTypes(_response);
+        });
+    }
+
+    protected processGetJobTypes(response: Response): Promise<JobTypesResponseDto> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as JobTypesResponseDto;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<JobTypesResponseDto>(null as any);
+    }
+
+    /**
+     * Add new job type
+     */
+    addJobType(request: AddJobTypeRequestDto): Promise<AddJobTypeResponseDto> {
+        let url_ = this.baseUrl + "/api/settings/job-types";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processAddJobType(_response);
+        });
+    }
+
+    protected processAddJobType(response: Response): Promise<AddJobTypeResponseDto> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 201) {
+            return response.text().then((_responseText) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AddJobTypeResponseDto;
+            return result201;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 409) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<AddJobTypeResponseDto>(null as any);
+    }
+
+    /**
+     * Update job type
+     */
+    updateJobType(request: UpdateJobTypeRequestDto): Promise<void> {
+        let url_ = this.baseUrl + "/api/settings/job-types";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processUpdateJobType(_response);
+        });
+    }
+
+    protected processUpdateJobType(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    /**
+     * Remove job type
+     */
+    deleteJobType(jobType: string): Promise<void> {
+        let url_ = this.baseUrl + "/api/settings/job-types?";
+        if (jobType === undefined || jobType === null)
+            throw new Error("The parameter 'jobType' must be defined and cannot be null.");
+        else
+            url_ += "jobType=" + encodeURIComponent("" + jobType) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "DELETE",
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processDeleteJobType(_response);
+        });
+    }
+
+    protected processDeleteJobType(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 204) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 409) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    /**
+     * List available skills
+     */
+    getSkills(): Promise<SkillsResponseDto> {
+        let url_ = this.baseUrl + "/api/settings/skills";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetSkills(_response);
+        });
+    }
+
+    protected processGetSkills(response: Response): Promise<SkillsResponseDto> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as SkillsResponseDto;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<SkillsResponseDto>(null as any);
+    }
+
+    /**
+     * Add new skill
+     */
+    addSkill(request: AddSkillRequestDto): Promise<void> {
+        let url_ = this.baseUrl + "/api/settings/skills";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processAddSkill(_response);
+        });
+    }
+
+    protected processAddSkill(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 201) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 409) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    /**
+     * Update skill
+     */
+    updateSkill(request: UpdateSkillRequestDto): Promise<void> {
+        let url_ = this.baseUrl + "/api/settings/skills";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processUpdateSkill(_response);
+        });
+    }
+
+    protected processUpdateSkill(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    /**
+     * Remove skill
+     */
+    deleteSkill(skill: string): Promise<void> {
+        let url_ = this.baseUrl + "/api/settings/skills?";
+        if (skill === undefined || skill === null)
+            throw new Error("The parameter 'skill' must be defined and cannot be null.");
+        else
+            url_ += "skill=" + encodeURIComponent("" + skill) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "DELETE",
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processDeleteSkill(_response);
+        });
+    }
+
+    protected processDeleteSkill(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 204) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 409) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    /**
+     * Get current weights configuration
+     */
+    getCurrentWeightsConfig(): Promise<WeightsConfigResponseDto> {
+        let url_ = this.baseUrl + "/api/admin/weights/current";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetCurrentWeightsConfig(_response);
+        });
+    }
+
+    protected processGetCurrentWeightsConfig(response: Response): Promise<WeightsConfigResponseDto> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WeightsConfigResponseDto;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<WeightsConfigResponseDto>(null as any);
+    }
+
+    /**
+     * Get weights configuration history
+     */
+    getWeightsConfigHistory(): Promise<WeightsConfigHistoryItemDto[]> {
+        let url_ = this.baseUrl + "/api/admin/weights/history";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetWeightsConfigHistory(_response);
+        });
+    }
+
+    protected processGetWeightsConfigHistory(response: Response): Promise<WeightsConfigHistoryItemDto[]> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WeightsConfigHistoryItemDto[];
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<WeightsConfigHistoryItemDto[]>(null as any);
+    }
+
+    /**
+     * Update weights configuration
+     */
+    updateWeightsConfig(request: UpdateWeightsConfigRequestDto): Promise<WeightsConfigResponseDto> {
+        let url_ = this.baseUrl + "/api/admin/weights";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processUpdateWeightsConfig(_response);
+        });
+    }
+
+    protected processUpdateWeightsConfig(response: Response): Promise<WeightsConfigResponseDto> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 201) {
+            return response.text().then((_responseText) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WeightsConfigResponseDto;
+            return result201;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<WeightsConfigResponseDto>(null as any);
+    }
+
+    /**
+     * Rollback weights configuration
+     */
+    rollbackWeightsConfig(request: RollbackWeightsConfigRequestDto): Promise<WeightsConfigResponseDto> {
+        let url_ = this.baseUrl + "/api/admin/weights/rollback";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processRollbackWeightsConfig(_response);
+        });
+    }
+
+    protected processRollbackWeightsConfig(response: Response): Promise<WeightsConfigResponseDto> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WeightsConfigResponseDto;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<WeightsConfigResponseDto>(null as any);
+    }
+
+    /**
+     * Generate demo data
+     */
+    generateDemoData(): Promise<void> {
+        let url_ = this.baseUrl + "/api/admin/demo-data";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "POST",
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGenerateDemoData(_response);
+        });
+    }
+
+    protected processGenerateDemoData(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    /**
+     * Delete all data
+     */
+    deleteAllData(): Promise<void> {
+        let url_ = this.baseUrl + "/api/admin/demo-data";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "DELETE",
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processDeleteAllData(_response);
+        });
+    }
+
+    protected processDeleteAllData(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    /**
+     * Get data counts
+     */
+    getDataCounts(): Promise<void> {
+        let url_ = this.baseUrl + "/api/admin/demo-data/counts";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetDataCounts(_response);
+        });
+    }
+
+    protected processGetDataCounts(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    /**
+     * Get dashboard statistics
+     */
+    getDashboardStatistics(): Promise<DashboardStatisticsDto> {
+        let url_ = this.baseUrl + "/api/dashboard/stats";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetDashboardStatistics(_response);
+        });
+    }
+
+    protected processGetDashboardStatistics(response: Response): Promise<DashboardStatisticsDto> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as DashboardStatisticsDto;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<DashboardStatisticsDto>(null as any);
+    }
+
+    /**
+     * Get recent activities
+     * @param types (optional) 
+     * @param limit (optional) 
+     */
+    getActivities(types?: string | null | undefined, limit?: number | null | undefined): Promise<ActivityDto[]> {
+        let url_ = this.baseUrl + "/api/activity?";
+        if (types !== undefined && types !== null)
+            url_ += "types=" + encodeURIComponent("" + types) + "&";
+        if (limit !== undefined && limit !== null)
+            url_ += "limit=" + encodeURIComponent("" + limit) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetActivities(_response);
+        });
+    }
+
+    protected processGetActivities(response: Response): Promise<ActivityDto[]> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ActivityDto[];
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<ActivityDto[]>(null as any);
+    }
 }
 
 export interface ContractorDto {
@@ -875,6 +1937,7 @@ export interface JobDto {
     desiredDate?: string;
     createdAt?: string;
     updatedAt?: string;
+    lastRecommendationAuditId?: string | undefined;
 }
 
 export interface TimeWindowDto {
@@ -886,6 +1949,43 @@ export interface ContractorAssignmentDto {
     contractorId?: string;
     startUtc?: string;
     endUtc?: string;
+    distanceMeters?: number | undefined;
+    travelTimeMinutes?: number | undefined;
+}
+
+export interface RecommendationResponse {
+    requestId?: string;
+    jobId?: string;
+    recommendations?: RecommendationDto[];
+    bestRecommendationContractorId?: string | undefined;
+    configVersion?: number;
+    generatedAt?: string;
+}
+
+export interface RecommendationDto {
+    contractorId?: string;
+    contractorName?: string;
+    score?: number;
+    scoreBreakdown?: ScoreBreakdown;
+    rationale?: string;
+    suggestedSlots?: TimeSlotDto[];
+    distance?: number;
+    eta?: number;
+    contractorBaseLocation?: string | undefined;
+}
+
+export interface ScoreBreakdown {
+    availability?: number;
+    rating?: number;
+    distance?: number;
+    rotation?: number | undefined;
+}
+
+export interface TimeSlotDto {
+    startUtc?: string;
+    endUtc?: string;
+    type?: string;
+    confidence?: number;
 }
 
 export interface CreateJobRequest {
@@ -914,6 +2014,172 @@ export interface UpdateJobRequest {
     accessNotes?: string | undefined;
     tools?: string[] | undefined;
     desiredDate?: string | undefined;
+}
+
+export interface UpdateJobStatusRequest {
+    status?: JobStatus;
+}
+
+export enum JobStatus {
+    Scheduled = 0,
+    InProgress = 1,
+    Completed = 2,
+    Canceled = 3,
+}
+
+export interface AssignmentDto {
+    id?: string;
+    jobId?: string;
+    contractorId?: string;
+    startUtc?: string;
+    endUtc?: string;
+    source?: string;
+    auditId?: string | undefined;
+    status?: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface AssignJobRequest {
+    contractorId?: string;
+    startUtc?: string;
+    endUtc?: string;
+    auditId?: string | undefined;
+    source?: string;
+}
+
+export interface RescheduleJobRequest {
+    startUtc?: string;
+    endUtc?: string;
+}
+
+export interface CancelJobRequest {
+    reason?: string | undefined;
+}
+
+export interface RecommendationRequest {
+    jobId?: string;
+    desiredDate?: string;
+    serviceWindow?: TimeWindowDto2 | undefined;
+    maxResults?: number;
+}
+
+export interface TimeWindowDto2 {
+    start?: string;
+    end?: string;
+}
+
+export interface RecalculateRequest {
+    jobId?: string;
+}
+
+export interface JobTypesResponseDto {
+    jobTypes?: string[];
+}
+
+export interface AddJobTypeResponseDto {
+    jobType?: string;
+}
+
+export interface AddJobTypeRequestDto {
+    jobType?: string;
+}
+
+export interface UpdateJobTypeRequestDto {
+    oldValue?: string;
+    newValue?: string;
+}
+
+export interface SkillsResponseDto {
+    skills?: string[];
+}
+
+export interface AddSkillRequestDto {
+    skill?: string;
+}
+
+export interface UpdateSkillRequestDto {
+    oldValue?: string;
+    newValue?: string;
+}
+
+export interface WeightsConfigResponseDto {
+    version?: number;
+    weights?: WeightFactorsDto;
+    tieBreakers?: string[];
+    rotation?: RotationConfigDto;
+    changeNotes?: string;
+    createdBy?: string;
+    createdAt?: string;
+}
+
+export interface WeightFactorsDto {
+    availability?: number;
+    rating?: number;
+    distance?: number;
+}
+
+export interface RotationConfigDto {
+    enabled?: boolean;
+    boost?: number;
+    underUtilizationThreshold?: number;
+}
+
+export interface WeightsConfigHistoryItemDto {
+    version?: number;
+    isActive?: boolean;
+    changeNotes?: string;
+    createdBy?: string;
+    createdAt?: string;
+}
+
+export interface UpdateWeightsConfigRequestDto {
+    weights?: WeightFactorsDto;
+    tieBreakers?: string[];
+    rotation?: RotationConfigDto;
+    changeNotes?: string;
+}
+
+export interface RollbackWeightsConfigRequestDto {
+    version?: number;
+    changeNotes?: string;
+}
+
+export interface DashboardStatisticsDto {
+    activeContractors?: StatMetric;
+    pendingJobs?: JobStatMetric;
+    averageAssignmentTime?: TimeMetric;
+    utilizationRate?: PercentMetric;
+}
+
+export interface StatMetric {
+    value?: number;
+    changeIndicator?: string | undefined;
+}
+
+export interface JobStatMetric {
+    value?: number;
+    unassigned?: number;
+    changeIndicator?: string | undefined;
+}
+
+export interface TimeMetric {
+    valueMinutes?: number;
+    changeIndicator?: string | undefined;
+}
+
+export interface PercentMetric {
+    value?: number;
+    changeIndicator?: string | undefined;
+}
+
+export interface ActivityDto {
+    id?: string;
+    type?: string;
+    title?: string;
+    description?: string;
+    timestamp?: string;
+    metadata?: { [key: string]: any; };
 }
 
 export class ApiException extends Error {

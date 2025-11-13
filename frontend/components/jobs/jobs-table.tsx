@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { CreateJobDialog } from "./create-job-dialog"
+import { ContractorDetailsDialog } from "@/components/contractors/contractor-details-dialog"
 import Link from "next/link"
 import { createApiClients } from "@/lib/api/api-client-config"
 import { useAuth } from "@/lib/auth/auth-context"
@@ -15,13 +16,14 @@ import { useSignalR } from "@/hooks/use-signalr"
 import { formatErrorForDisplay, isAuthenticationError } from "@/lib/api/error-handling"
 import { toast } from "sonner"
 import { Spinner } from "@/components/ui/spinner"
-import type { JobDto } from "@/lib/api/generated/api-client"
+import type { JobDto, ContractorDto } from "@/lib/api/generated/api-client"
 import type { JobAssigned } from "@/lib/realtime/signalr-types"
 
 export function JobsTable() {
   const { getTokenProvider, isAuthenticated, isLoading: authLoading } = useAuth()
   const { client: signalRClient } = useSignalR()
   const [jobs, setJobs] = useState<JobDto[]>([])
+  const [contractors, setContractors] = useState<Map<string, ContractorDto>>(new Map())
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -31,6 +33,8 @@ export function JobsTable() {
   const [sortField, setSortField] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [selectedContractor, setSelectedContractor] = useState<ContractorDto | null>(null)
+  const [isContractorDialogOpen, setIsContractorDialogOpen] = useState(false)
 
   const fetchJobs = useCallback(async () => {
     // Don't fetch if auth is still loading
@@ -57,10 +61,25 @@ export function JobsTable() {
       }
       
       const { client } = createApiClients(tokenProvider)
+      
+      // Fetch jobs and contractors in parallel
       const statusParam = statusFilter !== "all" ? statusFilter : null
       const priorityParam = priorityFilter !== "all" ? priorityFilter : null
-      const data = await client.getJobs(statusParam, priorityParam, null)
-      setJobs(data)
+      const [jobsData, contractorsData] = await Promise.all([
+        client.getJobs(statusParam, priorityParam, null),
+        client.getContractors(null, null)
+      ])
+      
+      setJobs(jobsData)
+      
+      // Build contractor lookup map
+      const contractorMap = new Map<string, ContractorDto>()
+      contractorsData.forEach(contractor => {
+        if (contractor.id) {
+          contractorMap.set(contractor.id, contractor)
+        }
+      })
+      setContractors(contractorMap)
     } catch (err) {
       const errorMessage = formatErrorForDisplay(err)
       setError(errorMessage)
@@ -348,7 +367,7 @@ export function JobsTable() {
               filteredJobs.map((job) => (
                 <TableRow key={job.id} className="cursor-pointer hover:bg-muted/50">
                   <TableCell>
-                    <Link href={`/jobs/${job.id}`} className="font-medium hover:underline">
+                    <Link href={`/jobs?id=${job.id}`} className="font-medium hover:underline">
                       {job.type || "Unknown"}
                     </Link>
                   </TableCell>
@@ -376,9 +395,32 @@ export function JobsTable() {
                     <Badge variant="outline">{job.status || "Created"}</Badge>
                   </TableCell>
                   <TableCell>
-                    {job.assignedContractors && job.assignedContractors.length > 0
-                      ? `${job.assignedContractors.length} contractor(s)`
-                      : "-"}
+                    {job.assignedContractors && job.assignedContractors.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {job.assignedContractors.map((assignment, idx) => {
+                          const contractor = assignment.contractorId ? contractors.get(assignment.contractorId) : null
+                          return (
+                            <Button
+                              key={idx}
+                              variant="link"
+                              size="sm"
+                              className="h-auto p-0 text-blue-600 hover:text-blue-800 hover:underline"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (contractor) {
+                                  setSelectedContractor(contractor)
+                                  setIsContractorDialogOpen(true)
+                                }
+                              }}
+                            >
+                              {contractor?.name || "Unknown"}
+                            </Button>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -392,6 +434,17 @@ export function JobsTable() {
         onOpenChange={setIsCreateDialogOpen}
         onJobCreated={handleJobCreated}
       />
+
+      {selectedContractor && (
+        <ContractorDetailsDialog
+          open={isContractorDialogOpen}
+          onOpenChange={setIsContractorDialogOpen}
+          contractor={selectedContractor}
+          onContractorUpdated={() => {
+            fetchJobs() // Refresh to get updated contractor data
+          }}
+        />
+      )}
     </div>
   )
 }

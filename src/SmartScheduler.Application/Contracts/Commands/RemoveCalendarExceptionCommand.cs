@@ -12,3 +12,4 @@ public record RemoveCalendarExceptionCommand : IRequest<ContractorDto>
     public DateOnly Date { get; init; }
 }
 
+

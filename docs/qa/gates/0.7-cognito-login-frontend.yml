@@ -81,3 +81,4 @@ recommendations:
     - action: "Add error boundary for authentication failures"
       refs: ["frontend/app/layout.tsx"]
 
+

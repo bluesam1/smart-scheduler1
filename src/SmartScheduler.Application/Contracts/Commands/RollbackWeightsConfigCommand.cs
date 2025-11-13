@@ -12,3 +12,4 @@ public record RollbackWeightsConfigCommand : IRequest<WeightsConfigResponseDto>
     public string CreatedBy { get; init; } = string.Empty;
 }
 
+

@@ -64,3 +64,4 @@ recommendations:
     - action: "Add frontend component tests for role-based UI hiding"
       refs: ["frontend/__tests__/settings/"]
 
+

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { MapPin, Clock, Calendar, Sparkles, UserCircle, RefreshCw } from "lucide-react"
 import { useState } from "react"
 import { RecommendationsSheet } from "./recommendations-sheet"
+import { BestAssignmentCard } from "./best-assignment-card"
 import { useRouter } from "next/navigation"
 
 interface JobCardProps {
@@ -39,7 +40,7 @@ export function JobCard({ job, onRequestRecommendations }: JobCardProps) {
     if (target.closest("button") || target.closest('[role="button"]') || target.closest("a")) {
       return
     }
-    router.push(`/jobs/${job.id}`)
+    router.push(`/jobs?id=${job.id}`)
   }
 
   return (
@@ -110,6 +111,15 @@ export function JobCard({ job, onRequestRecommendations }: JobCardProps) {
             ))}
           </div>
 
+          {isUnassigned && (
+            <BestAssignmentCard 
+              jobId={job.id} 
+              onAssigned={() => {
+                // Refresh the page or refetch data
+                window.location.reload()
+              }} 
+            />
+          )}
 
           {job.assignedTo && (
             <div className="rounded-md bg-muted/50 p-3">

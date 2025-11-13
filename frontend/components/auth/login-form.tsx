@@ -112,11 +112,18 @@ export function LoginForm({ onPasswordChangeRequired, onLoginSuccess }: LoginFor
   }
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>Sign In</CardTitle>
-        <CardDescription>Enter your email and password to access your account</CardDescription>
-      </CardHeader>
+    <div className="flex flex-col items-center gap-8 w-full max-w-md">
+      {/* SmartScheduler Logo */}
+      <div className="flex items-center gap-3">
+        <div className="w-14 h-14 bg-blue-600 rounded-xl"></div>
+        <span className="text-2xl font-semibold text-foreground">SmartScheduler</span>
+      </div>
+
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Sign In</CardTitle>
+          <CardDescription>Enter your email and password to access your account</CardDescription>
+        </CardHeader>
       <CardContent>
         <form 
           onSubmit={handleFormSubmit} 
@@ -183,6 +190,7 @@ export function LoginForm({ onPasswordChangeRequired, onLoginSuccess }: LoginFor
         </form>
       </CardContent>
     </Card>
+    </div>
   )
 }
 

@@ -71,3 +71,4 @@ recommendations:
     - action: "Add monitoring/alerting for event transformation failures"
       refs: ["src/SmartScheduler.Application/Contracts/Handlers/GetActivitiesQueryHandler.cs:68-101"]
 
+

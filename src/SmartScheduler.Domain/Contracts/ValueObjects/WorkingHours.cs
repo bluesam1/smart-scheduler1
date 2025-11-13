@@ -46,3 +46,4 @@ public record WorkingHours
     public bool IsValid => StartTime < EndTime && !string.IsNullOrWhiteSpace(TimeZone);
 }
 
+

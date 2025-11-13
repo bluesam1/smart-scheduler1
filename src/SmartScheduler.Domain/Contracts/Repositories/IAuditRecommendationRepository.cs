@@ -13,6 +13,11 @@ public interface IAuditRecommendationRepository
     Task AddAsync(AuditRecommendation auditRecommendation, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets an audit recommendation by ID.
+    /// </summary>
+    Task<AuditRecommendation?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets audit recommendations by job ID.
     /// </summary>
     Task<IReadOnlyList<AuditRecommendation>> GetByJobIdAsync(Guid jobId, CancellationToken cancellationToken = default);

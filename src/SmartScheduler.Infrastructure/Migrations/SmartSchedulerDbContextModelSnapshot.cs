@@ -218,6 +218,9 @@ namespace SmartScheduler.Infrastructure.Migrations
                     b.Property<int>("Duration")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("LastRecommendationAuditId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Priority")
                         .HasColumnType("integer");
 
@@ -247,6 +250,8 @@ namespace SmartScheduler.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("LastRecommendationAuditId");
 
                     b.ToTable("Jobs", (string)null);
                 });

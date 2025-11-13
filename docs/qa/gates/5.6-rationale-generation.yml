@@ -45,3 +45,4 @@ recommendations:
     - action: "Consider localization support for international deployments"
       refs: ["src/SmartScheduler.Application/Recommendations/Services/RationaleGenerator.cs"]
 
+

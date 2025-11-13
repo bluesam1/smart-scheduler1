@@ -46,3 +46,4 @@ recommendations:
     - action: "Consider A/B testing different boost amounts to optimize fairness"
       refs: ["src/SmartScheduler.Application/Recommendations/Services/RotationBoostService.cs"]
 
+

@@ -1,12 +1,12 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
 import { RecommendationCard } from "./recommendation-card"
-import { Sparkles, Clock, MapPin, ChevronLeft, ChevronRight, CalendarIcon, Map } from "lucide-react"
+import { Sparkles, Clock, MapPin, ChevronLeft, ChevronRight, CalendarIcon, Map, RefreshCw } from "lucide-react"
 import { MapViewDialog } from "@/components/map-view-dialog"
 import { useAuth } from "@/lib/auth/auth-context"
 import { formatErrorForDisplay } from "@/lib/api/error-handling"
@@ -45,6 +45,7 @@ interface RecommendationsSheetProps {
 interface ApiRecommendation {
   contractorId: string
   contractorName: string
+  contractorBaseLocation?: string
   score: number
   scoreBreakdown: {
     availability: number
@@ -73,9 +74,17 @@ interface ApiRecommendationResponse {
 
 // Transform API response to component format
 const transformRecommendation = (apiRec: ApiRecommendation, index: number) => {
-  // Format time slots
-  const slots = apiRec.suggestedSlots.map((slot) => {
+  console.log(`[RecommendationsSheet] Transforming recommendation ${index + 1}:`, {
+    contractorId: apiRec.contractorId,
+    contractorName: apiRec.contractorName,
+    suggestedSlotsCount: apiRec.suggestedSlots?.length || 0,
+    suggestedSlots: apiRec.suggestedSlots
+  })
+
+  // Format time slots - handle empty/missing slots gracefully
+  const slots = (apiRec.suggestedSlots || []).map((slot) => {
     const startDate = new Date(slot.startUtc)
+    const endDate = new Date(slot.endUtc)
     const timeStr = startDate.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
@@ -93,10 +102,16 @@ const transformRecommendation = (apiRec: ApiRecommendation, index: number) => {
     
     return {
       time: timeStr,
+      startUtc: slot.startUtc,
+      endUtc: slot.endUtc,
       label,
       confidence,
     }
   })
+  
+  if (slots.length === 0) {
+    console.warn(`[RecommendationsSheet] No suggested slots for contractor ${apiRec.contractorName} (${apiRec.contractorId})`)
+  }
 
   // Format distance
   const distanceMiles = (apiRec.distance / 1609.34).toFixed(1) // meters to miles
@@ -105,7 +120,7 @@ const transformRecommendation = (apiRec: ApiRecommendation, index: number) => {
   return {
     contractorId: apiRec.contractorId,
     contractorName: apiRec.contractorName,
-    baseLocation: "Base Location", // Not in API response, using placeholder
+    baseLocation: apiRec.contractorBaseLocation || "Location not available",
     rating: Math.round(apiRec.scoreBreakdown.rating),
     totalScore: Math.round(apiRec.score),
     scores: {
@@ -156,30 +171,62 @@ export function RecommendationsSheet({ open, onOpenChange, job }: Recommendation
   const [mapOpen, setMapOpen] = useState(false)
   const [assigningContractorId, setAssigningContractorId] = useState<string | null>(null)
   const [assigningSlotTime, setAssigningSlotTime] = useState<string | null>(null)
+  
+  // Track the last fetch to prevent duplicate requests
+  const lastFetchRef = useRef<{ jobId: string; date: string } | null>(null)
+  const jobIdRef = useRef(job.id)
+  
+  // Update jobId ref when it changes and reset fetch tracking
+  useEffect(() => {
+    if (jobIdRef.current !== job.id) {
+      jobIdRef.current = job.id
+      // Reset fetch tracking when job changes
+      lastFetchRef.current = null
+    }
+  }, [job.id])
 
-  // Subscribe to RecommendationReady events
+  // Subscribe to RecommendationReady events (but don't auto-refresh to avoid loops)
   useEffect(() => {
     if (!client || !open) return
 
     const unsubscribe = client.onRecommendationReady((event) => {
-      // Only refresh if this event is for the current job
-      if (event.jobId === job.id) {
-        console.log("RecommendationReady event received for job", job.id)
-        fetchRecommendations(selectedDate)
+      // Only log and notify instead of auto-refreshing to avoid infinite loops
+      if (event.jobId === jobIdRef.current) {
+        console.log("RecommendationReady event received for job", jobIdRef.current)
+        // Don't auto-refresh - user can manually refresh if needed
+        // toast.info("New recommendations may be available. Click Refresh to update.")
       }
     })
 
     return unsubscribe
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, open, job.id])
+  }, [client, open])
 
-  const fetchRecommendations = async (dateString: string) => {
+  // Store getTokenProvider in a ref to avoid dependency loops
+  const getTokenProviderRef = useRef(getTokenProvider)
+  useEffect(() => {
+    getTokenProviderRef.current = getTokenProvider
+  }, [getTokenProvider])
+
+  const fetchRecommendations = useCallback(async (dateString: string, showToast: boolean = false) => {
+    const currentJobId = jobIdRef.current
+    console.log("[RecommendationsSheet] Fetching recommendations for job:", currentJobId, "date:", dateString)
+    
+    // Prevent duplicate fetches for the same job/date combination
+    if (lastFetchRef.current?.jobId === currentJobId && lastFetchRef.current?.date === dateString && !showToast) {
+      console.log("[RecommendationsSheet] Skipping duplicate fetch for job:", currentJobId, "date:", dateString)
+      return
+    }
+    
+    // Mark that we're fetching this combination
+    lastFetchRef.current = { jobId: currentJobId, date: dateString }
+    
     setLoading(true)
     setError(null)
     
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5004"
-      const tokenProvider = getTokenProvider()
+      // Use ref to get the latest getTokenProvider without adding it to dependencies
+      const tokenProvider = getTokenProviderRef.current()
       const token = tokenProvider?.getToken() || null
       
       const headers: Record<string, string> = {
@@ -190,11 +237,12 @@ export function RecommendationsSheet({ open, onOpenChange, job }: Recommendation
         headers["Authorization"] = `Bearer ${token}`
       }
 
+      console.log("[RecommendationsSheet] Calling recommendations API:", `${apiUrl}/api/recommendations`)
       const response = await fetch(`${apiUrl}/api/recommendations`, {
         method: "POST",
         headers,
         body: JSON.stringify({
-          jobId: job.id,
+          jobId: currentJobId,
           desiredDate: dateString,
           maxResults: 10,
         }),
@@ -206,24 +254,44 @@ export function RecommendationsSheet({ open, onOpenChange, job }: Recommendation
       }
 
       const data: ApiRecommendationResponse = await response.json()
+      console.log("[RecommendationsSheet] Received", data.recommendations.length, "recommendations")
+      console.log("[RecommendationsSheet] Raw API response:", JSON.stringify(data, null, 2))
+      
       const transformed = data.recommendations.map((rec, index) => transformRecommendation(rec, index))
+      console.log("[RecommendationsSheet] Transformed recommendations:", transformed)
       setRecommendations(transformed)
+      
+      if (showToast) {
+        toast.success(`Found ${transformed.length} qualified contractors`)
+      }
     } catch (err) {
       const errorMessage = formatErrorForDisplay(err)
+      console.error("[RecommendationsSheet] Error fetching recommendations:", err)
       setError(errorMessage)
       toast.error(`Failed to load recommendations: ${errorMessage}`)
       setRecommendations([])
     } finally {
       setLoading(false)
     }
-  }
+  }, []) // Empty deps - function is stable, uses refs for dynamic values
+
+  // Expose refresh function for external use
+  const handleRefresh = useCallback(() => {
+    console.log("[RecommendationsSheet] Manual refresh triggered")
+    // Clear the last fetch ref to force a new fetch
+    lastFetchRef.current = null
+    toast.info("Recalculating recommendations...")
+    fetchRecommendations(selectedDate, true)
+  }, [selectedDate, fetchRecommendations])
 
   useEffect(() => {
-    if (open && job.id) {
-      fetchRecommendations(selectedDate)
+    // Only fetch when sheet is open and we have a job ID
+    if (!open || !jobIdRef.current) {
+      return
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate, open, job.id])
+    
+    fetchRecommendations(selectedDate)
+  }, [selectedDate, open, fetchRecommendations]) // fetchRecommendations is now stable with empty deps
 
   const navigateDate = (direction: "prev" | "next") => {
     const currentDate = new Date(selectedDate)
@@ -407,38 +475,64 @@ export function RecommendationsSheet({ open, onOpenChange, job }: Recommendation
             <SheetDescription>
               Find the best contractors for this job based on skills, availability, and location.
             </SheetDescription>
-            <div className="space-y-2 pt-2 text-sm text-muted-foreground">
+            <div className="space-y-3 pt-2">
               <div className="font-semibold text-foreground text-balance">{job.type}</div>
-              <div className="flex flex-col gap-1">
+              
+              {/* Job Duration - Prominent Display */}
+              {job.duration && job.duration > 0 && (
+                <div className="flex items-center justify-center gap-2 py-3 px-4 bg-primary/10 rounded-lg border border-primary/20">
+                  <Clock className="h-5 w-5 text-primary" />
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-primary">
+                      {(job.duration / 60).toFixed(1)}
+                    </div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide">
+                      {(job.duration / 60) === 1 ? 'Hour' : 'Hours'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1.5">
-                  <MapPin className="h-3 w-3" />
+                  <MapPin className="h-3 w-3 flex-shrink-0" />
                   <span className="text-pretty">{job.address || job.location?.formattedAddress || job.location?.address || "Address not available"}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Clock className="h-3 w-3" />
+                  <CalendarIcon className="h-3 w-3 flex-shrink-0" />
                   <span>
                     {job.scheduledDate || job.desiredDate || job.serviceWindow?.start 
-                      ? new Date(job.scheduledDate || job.desiredDate || job.serviceWindow?.start || "").toLocaleDateString()
+                      ? new Date(job.scheduledDate || job.desiredDate || job.serviceWindow?.start || "").toLocaleDateString("en-US", {
+                          weekday: "short",
+                          month: "short", 
+                          day: "numeric",
+                          year: "numeric"
+                        })
                       : "Date not set"
-                    } 
+                    }
                     {job.serviceWindow?.start && (
-                      <> at {new Date(job.serviceWindow.start).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}</>
+                      <> • {new Date(job.serviceWindow.start).toLocaleTimeString("en-US", { 
+                        hour: "numeric", 
+                        minute: "2-digit", 
+                        hour12: true 
+                      })}</>
                     )}
-                    {job.duration && ` (${Math.round(job.duration / 60)}h)`}
                   </span>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-1 pt-1">
+              
+              <div className="flex flex-wrap gap-1">
                 {(job.requiredSkills || []).map((skill) => (
                   <Badge key={skill} variant="secondary" className="text-xs">
                     {skill}
                   </Badge>
                 ))}
               </div>
+              
               <Button
                 variant="outline"
                 size="sm"
-                className="mt-2 w-full bg-transparent"
+                className="w-full bg-transparent"
                 onClick={() => setMapOpen(true)}
               >
                 <Map className="mr-2 h-4 w-4" />
@@ -473,15 +567,18 @@ export function RecommendationsSheet({ open, onOpenChange, job }: Recommendation
           <div className="mt-6 space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                {loading ? "Refreshing..." : `Showing ${recommendations.length} qualified contractors`}
+                {loading ? "Recalculating recommendations..." : `Showing ${recommendations.length} qualified contractors`}
               </p>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => fetchRecommendations(selectedDate)}
+                onClick={handleRefresh}
                 disabled={loading}
+                className="gap-2"
+                title="Recalculate recommendations from the backend"
               >
-                {loading ? "Refreshing..." : "Refresh"}
+                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                {loading ? "Recalculating..." : "Refresh"}
               </Button>
             </div>
 
@@ -491,9 +588,11 @@ export function RecommendationsSheet({ open, onOpenChange, job }: Recommendation
                 <Button
                   variant="outline"
                   size="sm"
-                  className="mt-2"
-                  onClick={() => fetchRecommendations(selectedDate)}
+                  className="mt-2 gap-2"
+                  onClick={handleRefresh}
+                  disabled={loading}
                 >
+                  <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                   Retry
                 </Button>
               </div>
@@ -511,15 +610,23 @@ export function RecommendationsSheet({ open, onOpenChange, job }: Recommendation
                     <p className="text-sm text-muted-foreground">No recommendations available for this date.</p>
                   </div>
                 ) : (
-                  recommendations.map((recommendation, index) => (
-                    <RecommendationCard
-                      key={recommendation.contractorId}
-                      recommendation={recommendation}
-                      rank={index + 1}
-                      onAssign={handleAssign}
-                      jobDuration={job.duration ? Math.round(job.duration / 60) : 2}
-                    />
-                  ))
+                  recommendations.map((recommendation, index) => {
+                    // Convert duration from minutes to hours, with proper null/undefined/NaN handling
+                    let durationInHours = 2 // default
+                    if (job.duration && typeof job.duration === 'number' && !isNaN(job.duration) && job.duration > 0) {
+                      durationInHours = job.duration / 60
+                    }
+                    
+                    return (
+                      <RecommendationCard
+                        key={recommendation.contractorId}
+                        recommendation={recommendation}
+                        rank={index + 1}
+                        onAssign={handleAssign}
+                        jobDuration={durationInHours}
+                      />
+                    )
+                  })
                 )}
               </div>
             )}

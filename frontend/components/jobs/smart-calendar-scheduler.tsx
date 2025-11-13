@@ -2,9 +2,12 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, CalendarIcon, X, Clock } from "lucide-react"
+import { createApiClients } from "@/lib/api/api-client-config"
+import { useAuth } from "@/lib/auth/auth-context"
+import { toast } from "@/hooks/use-toast"
 
 interface ScheduleSession {
   id: string
@@ -39,15 +42,74 @@ export function SmartCalendarScheduler({
   const [dragStartTime, setDragStartTime] = useState<number>(0)
   const [totalScheduledHours, setTotalScheduledHours] = useState<number>(0)
   const [remainingHours, setRemainingHours] = useState<number>(jobDuration)
+  const [existingJobs, setExistingJobs] = useState<Array<{ id: string; title: string; start: string; end: string }>>([])
+  const [isLoadingJobs, setIsLoadingJobs] = useState(false)
+
+  const { getTokenProvider, isAuthenticated } = useAuth()
 
   const workingHours = { start: 8, end: 17 }
 
-  const existingJobs = [
-    { id: "J-001", title: "HVAC Repair", start: "09:00", end: "11:00" },
-    { id: "J-045", title: "Electrical Inspection", start: "14:00", end: "16:00" },
-  ]
-
   const timeGridRef = useRef<HTMLDivElement>(null)
+
+  // Fetch existing jobs for this contractor on the current date
+  useEffect(() => {
+    const fetchExistingJobs = async () => {
+      if (!isAuthenticated || !contractorId) return
+
+      setIsLoadingJobs(true)
+      try {
+        const tokenProvider = getTokenProvider()
+        if (!tokenProvider) {
+          setExistingJobs([])
+          setIsLoadingJobs(false)
+          return
+        }
+        
+        const { client } = createApiClients(tokenProvider)
+        
+        // Fetch all jobs and filter by contractor and date
+        const allJobs = await client.getJobs(null, null, null)
+        
+        // Filter jobs assigned to this contractor
+        const contractorJobs = allJobs.filter((job) =>
+          job.assignedContractors?.some((assignment) => assignment.contractorId === contractorId)
+        )
+        
+        // Filter jobs that fall on the current date and have service windows
+        const jobsOnDate = contractorJobs
+          .filter((job) => {
+            if (!job.serviceWindow?.start) return false
+            const jobDate = new Date(job.serviceWindow.start).toISOString().split("T")[0]
+            return jobDate === currentDate
+          })
+          .map((job) => {
+            const startDate = new Date(job.serviceWindow!.start!)
+            const endDate = new Date(job.serviceWindow!.end!)
+            
+            return {
+              id: job.id || "",
+              title: job.type || "Untitled Job",
+              start: `${startDate.getHours().toString().padStart(2, "0")}:${startDate.getMinutes().toString().padStart(2, "0")}`,
+              end: `${endDate.getHours().toString().padStart(2, "0")}:${endDate.getMinutes().toString().padStart(2, "0")}`,
+            }
+          })
+        
+        setExistingJobs(jobsOnDate)
+      } catch (error) {
+        console.error("Failed to fetch existing jobs:", error)
+        toast({
+          title: "Failed to load existing jobs",
+          description: "Using default availability",
+          variant: "destructive",
+        })
+        setExistingJobs([])
+      } finally {
+        setIsLoadingJobs(false)
+      }
+    }
+
+    fetchExistingJobs()
+  }, [contractorId, currentDate, isAuthenticated, getTokenProvider])
 
   const navigateDate = (direction: "prev" | "next") => {
     const date = new Date(currentDate)
@@ -221,18 +283,16 @@ export function SmartCalendarScheduler({
   }
 
   const handleBlockClick = (blockStart: string, blockEnd: string) => {
-    // Don't allow adding sessions if job is fully scheduled
-    if (totalScheduledHours >= jobDuration) {
-      return
-    }
-
     const startMinutes = timeToMinutes(blockStart)
     const blockEndMinutes = timeToMinutes(blockEnd)
     const availableDuration = (blockEndMinutes - startMinutes) / 60
     const remainingJobHours = jobDuration - totalScheduledHours
 
-    // Take the minimum of: available block time, remaining job hours
-    const sessionDuration = Math.min(availableDuration, remainingJobHours)
+    // If job is already fully scheduled, use a minimum session of 1 hour or the available block size
+    const sessionDuration = remainingJobHours > 0 
+      ? Math.min(availableDuration, remainingJobHours)
+      : Math.min(availableDuration, 1)
+    
     const endMinutes = startMinutes + sessionDuration * 60
     const endTime = minutesToTime(endMinutes)
 
@@ -244,8 +304,9 @@ export function SmartCalendarScheduler({
       durationHours: sessionDuration,
     }
     setScheduledSessions([...scheduledSessions, session])
-    setTotalScheduledHours(totalScheduledHours + sessionDuration)
-    setRemainingHours(jobDuration - totalScheduledHours)
+    const newTotalHours = totalScheduledHours + sessionDuration
+    setTotalScheduledHours(newTotalHours)
+    setRemainingHours(Math.max(0, jobDuration - newTotalHours))
   }
 
   const getRecommendedTime = () => {
@@ -315,16 +376,20 @@ export function SmartCalendarScheduler({
     }
 
     setScheduledSessions([...scheduledSessions, ...newSessions])
-    setTotalScheduledHours(totalScheduledHours + hoursNeeded)
-    setRemainingHours(jobDuration - totalScheduledHours)
+    // Calculate actual hours added from the new sessions
+    const hoursAdded = newSessions.reduce((sum, session) => sum + session.durationHours, 0)
+    const newTotalHours = totalScheduledHours + hoursAdded
+    setTotalScheduledHours(newTotalHours)
+    setRemainingHours(Math.max(0, jobDuration - newTotalHours))
   }
 
   const handleRemoveSession = (sessionId: string) => {
     const sessionToRemove = scheduledSessions.find((s) => s.id === sessionId)
     if (sessionToRemove) {
       setScheduledSessions(scheduledSessions.filter((s) => s.id !== sessionId))
-      setTotalScheduledHours(totalScheduledHours - sessionToRemove.durationHours)
-      setRemainingHours(jobDuration - totalScheduledHours)
+      const newTotalHours = totalScheduledHours - sessionToRemove.durationHours
+      setTotalScheduledHours(newTotalHours)
+      setRemainingHours(Math.max(0, jobDuration - newTotalHours))
     }
   }
 
@@ -400,8 +465,9 @@ export function SmartCalendarScheduler({
                 : s,
             ),
           )
-          setTotalScheduledHours(totalOtherHours + newDuration)
-          setRemainingHours(jobDuration - totalOtherHours - newDuration)
+          const newTotalHours = totalOtherHours + newDuration
+          setTotalScheduledHours(newTotalHours)
+          setRemainingHours(Math.max(0, jobDuration - newTotalHours))
         }
       } else if (resizingSession.handle === "end") {
         let newEndMinutes = dragStartTime + snapMinutes
@@ -421,8 +487,9 @@ export function SmartCalendarScheduler({
                 : s,
             ),
           )
-          setTotalScheduledHours(totalOtherHours + newDuration)
-          setRemainingHours(jobDuration - totalOtherHours - newDuration)
+          const newTotalHours = totalOtherHours + newDuration
+          setTotalScheduledHours(newTotalHours)
+          setRemainingHours(Math.max(0, jobDuration - newTotalHours))
         }
       }
     }
@@ -491,17 +558,17 @@ export function SmartCalendarScheduler({
 
             {availableBlocks.map((block, index) => {
               const style = getBlockStyle(block.start, block.end)
-              const canSchedule = totalScheduledHours < jobDuration
+              const isFullyScheduled = totalScheduledHours >= jobDuration
               return (
                 <div
                   key={`available-${index}`}
-                  className={`absolute left-16 right-2 border-2 rounded-md flex items-center justify-center text-xs font-medium transition-colors ${
-                    canSchedule
-                      ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 cursor-pointer hover:bg-emerald-500/30"
-                      : "bg-muted/20 border-muted cursor-not-allowed text-muted-foreground"
+                  className={`absolute left-16 right-2 border-2 rounded-md flex items-center justify-center text-xs font-medium transition-colors cursor-pointer ${
+                    isFullyScheduled
+                      ? "bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300 hover:bg-blue-500/20"
+                      : "bg-emerald-500/20 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/30"
                   }`}
                   style={style}
-                  onClick={() => canSchedule && handleBlockClick(block.start, block.end)}
+                  onClick={() => handleBlockClick(block.start, block.end)}
                 >
                   {block.start} - {block.end}
                 </div>

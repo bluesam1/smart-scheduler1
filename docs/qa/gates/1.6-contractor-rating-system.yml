@@ -58,3 +58,4 @@ recommendations:
       refs: ["src/SmartScheduler.Application/Contracts/Handlers/UpdateContractorRatingCommandHandler.cs"]
   future: []
 
+

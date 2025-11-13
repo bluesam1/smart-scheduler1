@@ -21,6 +21,7 @@ using SmartScheduler.Application.Contracts.Services;
 using SmartScheduler.Infrastructure.ExternalServices;
 using SmartScheduler.Application.Recommendations.Configuration;
 using SmartScheduler.Infrastructure.Configuration;
+using System.Text.RegularExpressions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -228,8 +229,44 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
-              .AllowAnyMethod()
+        // Get allowed origins from configuration (supports multiple origins)
+        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
+            ?? new[] { "http://localhost:3000" };
+        
+        // Filter out wildcard patterns and add them separately
+        var specificOrigins = allowedOrigins.Where(o => !o.Contains("*")).ToArray();
+        var wildcardPatterns = allowedOrigins.Where(o => o.Contains("*")).ToArray();
+        
+        // If we have wildcard patterns, use SetIsOriginAllowed for dynamic checking
+        // Otherwise, use WithOrigins for better performance
+        if (wildcardPatterns.Length > 0)
+        {
+            policy.SetIsOriginAllowed(origin =>
+            {
+                if (string.IsNullOrEmpty(origin))
+                    return false;
+                
+                // Check against specific origins first
+                if (specificOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
+                    return true;
+                
+                // Check against wildcard patterns
+                foreach (var pattern in wildcardPatterns)
+                {
+                    var regexPattern = "^" + Regex.Escape(pattern).Replace("\\*", ".*") + "$";
+                    if (Regex.IsMatch(origin, regexPattern, RegexOptions.IgnoreCase))
+                        return true;
+                }
+                
+                return false;
+            });
+        }
+        else if (specificOrigins.Length > 0)
+        {
+            policy.WithOrigins(specificOrigins);
+        }
+        
+        policy.AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
     });

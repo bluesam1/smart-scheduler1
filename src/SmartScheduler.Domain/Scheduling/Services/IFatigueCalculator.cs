@@ -58,3 +58,4 @@ public class FatigueFeasibilityResult
     public int? RequiredBreakMinutes { get; init; }
 }
 
+

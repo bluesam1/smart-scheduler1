@@ -12,3 +12,4 @@ public record AddCalendarExceptionCommand : IRequest<ContractorDto>
     public CalendarExceptionDto Exception { get; init; } = null!;
 }
 
+

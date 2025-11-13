@@ -163,3 +163,4 @@ echo "  aws secretsmanager get-secret-value --secret-id smartscheduler/database/
 echo ""
 echo "=== Diagnostic Complete ==="
 
+

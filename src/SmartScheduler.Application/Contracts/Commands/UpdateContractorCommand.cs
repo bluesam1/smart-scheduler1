@@ -12,3 +12,4 @@ public record UpdateContractorCommand : IRequest<ContractorDto>
     public UpdateContractorRequest Request { get; init; } = null!;
 }
 
+

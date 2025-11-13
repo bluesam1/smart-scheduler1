@@ -135,3 +135,4 @@ CORS is configured to allow requests from `http://localhost:3000` (Next.js front
 - Set up SignalR hubs (Story 0.3)
 - Connect frontend to backend (Story 0.4)
 
+

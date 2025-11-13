@@ -11,3 +11,4 @@ public record CreateJobCommand : IRequest<JobDto>
     public CreateJobRequest Request { get; init; } = null!;
 }
 
+

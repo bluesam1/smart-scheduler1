@@ -64,3 +64,4 @@ recommendations:
     - action: "Derive region from job location or user context instead of hard-coding"
       refs: ["src/SmartScheduler.Application/Contracts/Handlers/AssignJobCommandHandler.cs:120"]
 
+

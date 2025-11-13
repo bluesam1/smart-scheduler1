@@ -28,3 +28,4 @@ public interface ISkillNormalizationService
     bool IsSubset(IReadOnlyList<string> requiredSkills, IReadOnlyList<string> availableSkills);
 }
 
+

@@ -11,3 +11,4 @@ public record GetContractorByIdQuery : IRequest<ContractorDto?>
     public Guid Id { get; init; }
 }
 
+

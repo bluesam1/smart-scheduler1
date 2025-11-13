@@ -43,3 +43,4 @@ recommendations:
     - action: "Consider property-based tests for additional confidence"
       refs: ["src/SmartScheduler.Domain.Tests/Scheduling/AvailabilityEngineTests.cs"]
 
+

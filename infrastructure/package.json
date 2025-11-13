@@ -11,6 +11,7 @@
     "deploy:database": "cdk deploy SmartScheduler-Database",
     "deploy:secrets": "cdk deploy SmartScheduler-Secrets",
     "deploy:storage": "cdk deploy SmartScheduler-Storage",
+    "deploy:cognito": "cdk deploy SmartScheduler-Cognito",
     "deploy:api": "cdk deploy SmartScheduler-Api",
     "deploy:frontend": "cdk deploy SmartScheduler-Frontend",
     "diff": "cdk diff",
@@ -18,6 +19,7 @@
     "destroy:database": "cdk destroy SmartScheduler-Database",
     "destroy:secrets": "cdk destroy SmartScheduler-Secrets",
     "destroy:storage": "cdk destroy SmartScheduler-Storage",
+    "destroy:cognito": "cdk destroy SmartScheduler-Cognito",
     "destroy:api": "cdk destroy SmartScheduler-Api",
     "destroy:frontend": "cdk destroy SmartScheduler-Frontend"
   },

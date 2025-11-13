@@ -23,6 +23,12 @@ public class AuditRecommendationRepository : IAuditRecommendationRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<AuditRecommendation?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _context.Set<AuditRecommendation>()
+            .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<AuditRecommendation>> GetByJobIdAsync(Guid jobId, CancellationToken cancellationToken = default)
     {
         return await _context.Set<AuditRecommendation>()

@@ -44,3 +44,4 @@ public interface IJobRepository
     Task DeleteAsync(Job job, CancellationToken cancellationToken = default);
 }
 
+

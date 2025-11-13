@@ -18,3 +18,4 @@ public interface IScoringWeightsConfigLoader
     int GetConfigVersion();
 }
 
+

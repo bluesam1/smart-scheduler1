@@ -13,3 +13,4 @@ public interface IRotationBoostService
     double? CalculateBoost(double utilization);
 }
 
+

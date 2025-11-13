@@ -42,6 +42,7 @@ public interface ISlotGenerator
 public class GeneratedSlot
 {
     public TimeWindow Window { get; init; } = null!;
+    public List<TimeWindow> DailyWindows { get; init; } = new(); // Per-day breakdown (1-3 items)
     public SlotType Type { get; init; }
     public int Confidence { get; init; } // 0-100
 }

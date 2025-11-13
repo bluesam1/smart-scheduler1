@@ -11,3 +11,4 @@ public class TimeSlotDto
     public int Confidence { get; set; } // 0-100
 }
 
+

@@ -12,3 +12,4 @@ public record UpdateContractorWorkingHoursCommand : IRequest<ContractorDto>
     public IReadOnlyList<WorkingHoursDto> WorkingHours { get; init; } = Array.Empty<WorkingHoursDto>();
 }
 
+

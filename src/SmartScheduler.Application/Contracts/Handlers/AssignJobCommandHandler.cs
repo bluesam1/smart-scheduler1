@@ -69,19 +69,20 @@ public class AssignJobCommandHandler : IRequestHandler<AssignJobCommand, Assignm
             return existingAssignment.ToDto();
         }
 
-        // Re-validate availability
-        var validationResult = await _availabilityRevalidator.ValidateAvailabilityAsync(
-            req.ContractorId,
-            request.JobId,
-            req.StartUtc,
-            req.EndUtc,
-            job.Duration,
-            job.Timezone,
-            cancellationToken);
+        // Check for direct conflicts only (overlapping assignments)
+        // Note: Travel buffer and feasibility checks are removed - only warnings shown on frontend
+        var allAssignments = await _assignmentRepository.GetByContractorIdAsync(req.ContractorId, cancellationToken);
+        var conflictingAssignment = allAssignments
+            .Where(a => a.Status != AssignmentEntityStatus.Cancelled && a.Id != request.JobId)
+            .FirstOrDefault(a => 
+                (a.StartUtc < req.EndUtc && a.EndUtc > req.StartUtc)); // Check for overlap
 
-        if (!validationResult.IsValid)
+        if (conflictingAssignment != null)
         {
-            throw new InvalidOperationException(validationResult.ErrorMessage ?? "Contractor is not available for this time slot.");
+            throw new InvalidOperationException(
+                $"Contractor is already assigned to another job during this time slot. " +
+                $"Conflicting assignment: {conflictingAssignment.Id} " +
+                $"({conflictingAssignment.StartUtc:yyyy-MM-dd HH:mm} - {conflictingAssignment.EndUtc:yyyy-MM-dd HH:mm} UTC).");
         }
 
         // Parse assignment source
@@ -100,12 +101,9 @@ public class AssignJobCommandHandler : IRequestHandler<AssignJobCommand, Assignm
             source,
             req.AuditId);
 
-        // Update job status to Assigned
-        if (job.Status == JobStatus.Created)
-        {
-            job.UpdateStatus(JobStatus.Assigned);
-            await _jobRepository.UpdateAsync(job, cancellationToken);
-        }
+        // Job status remains Scheduled when assigned
+        // (AssignmentStatus will reflect the assignment)
+        await _jobRepository.UpdateAsync(job, cancellationToken);
 
         // Also add to job's AssignedContractors collection (for backward compatibility)
         job.AssignContractor(req.ContractorId, req.StartUtc, req.EndUtc);

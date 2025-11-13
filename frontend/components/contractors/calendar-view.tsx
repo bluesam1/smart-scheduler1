@@ -38,12 +38,19 @@ interface CalendarException {
   endTime?: string
 }
 
+interface WorkingHours {
+  dayOfWeek: number // 0 = Sunday, 1 = Monday, etc.
+  startTime: string // HH:mm format
+  endTime: string // HH:mm format
+}
+
 export function CalendarView({ contractorId, contractorName }: CalendarViewProps) {
   const { getTokenProvider, isAuthenticated, isLoading: authLoading } = useAuth()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [viewType, setViewType] = useState<ViewType>("week")
   const [jobs, setJobs] = useState<CalendarJob[]>([])
   const [exceptions, setExceptions] = useState<CalendarException[]>([])
+  const [workingHours, setWorkingHours] = useState<WorkingHours[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -68,6 +75,19 @@ export function CalendarView({ contractorId, contractorName }: CalendarViewProps
       }
 
       const { client } = createApiClients(tokenProvider)
+      
+      // Fetch contractor details to get working hours
+      const contractor = await client.getContractorById(contractorId)
+      
+      // Map working hours from API format to local format
+      if (contractor.workingHours) {
+        const mappedWorkingHours: WorkingHours[] = contractor.workingHours.map((wh) => ({
+          dayOfWeek: wh.dayOfWeek,
+          startTime: wh.startTime,
+          endTime: wh.endTime
+        }))
+        setWorkingHours(mappedWorkingHours)
+      }
       
       // Fetch all jobs and filter by contractor assignments
       const allJobs = await client.getJobs(null, null, null)
@@ -214,9 +234,9 @@ export function CalendarView({ contractorId, contractorName }: CalendarViewProps
 
       {/* Calendar Grid */}
       <div className="border rounded-lg">
-        {viewType === "week" && <WeekView jobs={jobs} exceptions={exceptions} currentDate={currentDate} />}
-        {viewType === "day" && <DayView jobs={jobs} exceptions={exceptions} currentDate={currentDate} />}
-        {viewType === "month" && <MonthView jobs={jobs} exceptions={exceptions} currentDate={currentDate} />}
+        {viewType === "week" && <WeekView jobs={jobs} exceptions={exceptions} currentDate={currentDate} workingHours={workingHours} />}
+        {viewType === "day" && <DayView jobs={jobs} exceptions={exceptions} currentDate={currentDate} workingHours={workingHours} />}
+        {viewType === "month" && <MonthView jobs={jobs} exceptions={exceptions} currentDate={currentDate} workingHours={workingHours} />}
       </div>
     </div>
   )
@@ -226,10 +246,12 @@ function WeekView({
   jobs,
   exceptions,
   currentDate,
+  workingHours,
 }: {
   jobs: any[]
   exceptions: any[]
   currentDate: Date
+  workingHours: WorkingHours[]
 }) {
   const weekStart = new Date(currentDate)
   weekStart.setDate(currentDate.getDate() - currentDate.getDay())
@@ -241,6 +263,18 @@ function WeekView({
   })
 
   const hours = Array.from({ length: 15 }, (_, i) => i + 6) // 6 AM to 8 PM
+
+  // Helper function to check if a specific hour on a day is within working hours
+  const isWorkingHour = (day: Date, hour: number): boolean => {
+    const dayOfWeek = day.getDay()
+    const dayWorkingHours = workingHours.find(wh => wh.dayOfWeek === dayOfWeek)
+    if (!dayWorkingHours) return false
+    
+    const startHour = parseInt(dayWorkingHours.startTime.split(':')[0])
+    const endHour = parseInt(dayWorkingHours.endTime.split(':')[0])
+    
+    return hour >= startHour && hour < endHour
+  }
 
   return (
     <div className="overflow-auto max-h-[calc(92vh-280px)]">
@@ -274,11 +308,16 @@ function WeekView({
               )
 
               const hasJob = jobs.some((job) => Number.parseInt(job.startTime.split(":")[0]) === hour)
+              const isWorking = isWorkingHour(day, hour)
 
               return (
                 <div
                   key={`${dayIndex}-${hour}`}
-                  className={cn("p-2 border-b border-r min-h-[60px] relative", hasException && "bg-destructive/10")}
+                  className={cn(
+                    "p-2 border-b border-r min-h-[60px] relative",
+                    isWorking && "bg-green-50",
+                    hasException && "bg-red-50"
+                  )}
                 >
                   {hasException &&
                     exceptions
@@ -318,9 +357,21 @@ function WeekView({
   )
 }
 
-function DayView({ jobs, exceptions, currentDate }: { jobs: any[]; exceptions: any[]; currentDate: Date }) {
+function DayView({ jobs, exceptions, currentDate, workingHours }: { jobs: any[]; exceptions: any[]; currentDate: Date; workingHours: WorkingHours[] }) {
   const hours = Array.from({ length: 15 }, (_, i) => i + 6) // 6 AM to 8 PM
   const dayExceptions = exceptions.filter((exc) => exc.date.toDateString() === currentDate.toDateString())
+
+  // Helper function to check if a specific hour is within working hours
+  const isWorkingHour = (hour: number): boolean => {
+    const dayOfWeek = currentDate.getDay()
+    const dayWorkingHours = workingHours.find(wh => wh.dayOfWeek === dayOfWeek)
+    if (!dayWorkingHours) return false
+    
+    const startHour = parseInt(dayWorkingHours.startTime.split(':')[0])
+    const endHour = parseInt(dayWorkingHours.endTime.split(':')[0])
+    
+    return hour >= startHour && hour < endHour
+  }
 
   // Calculate job height based on duration
   const calculateJobHeight = (startTime: string, endTime: string) => {
@@ -363,6 +414,10 @@ function DayView({ jobs, exceptions, currentDate }: { jobs: any[]; exceptions: a
         <div className="relative">
           {hours.map((hour, index) => {
             const hourJobs = jobs.filter((job) => Number.parseInt(job.startTime.split(":")[0]) === hour)
+            const isWorking = isWorkingHour(hour)
+            const hasException = dayExceptions.some(
+              (exc) => exc.allDay || (exc.startTime && Number.parseInt(exc.startTime.split(":")[0]) === hour)
+            )
 
             return (
               <div key={hour} className="relative" style={{ height: "60px" }}>
@@ -370,7 +425,14 @@ function DayView({ jobs, exceptions, currentDate }: { jobs: any[]; exceptions: a
                 <div className="absolute left-0 top-0 w-20 text-sm text-muted-foreground">
                   {hour > 12 ? hour - 12 : hour}:00 {hour >= 12 ? "PM" : "AM"}
                 </div>
-                <div className="absolute left-24 right-0 top-0 border-b" style={{ height: "60px" }}>
+                <div 
+                  className={cn(
+                    "absolute left-24 right-0 top-0 border-b",
+                    isWorking && "bg-green-50",
+                    hasException && "bg-red-50"
+                  )} 
+                  style={{ height: "60px" }}
+                >
                   {/* Render jobs that start in this hour */}
                   {hourJobs.map((job) => {
                     const height = calculateJobHeight(job.startTime, job.endTime)
@@ -413,7 +475,7 @@ function DayView({ jobs, exceptions, currentDate }: { jobs: any[]; exceptions: a
   )
 }
 
-function MonthView({ jobs, exceptions, currentDate }: { jobs: any[]; exceptions: any[]; currentDate: Date }) {
+function MonthView({ jobs, exceptions, currentDate, workingHours }: { jobs: any[]; exceptions: any[]; currentDate: Date; workingHours: WorkingHours[] }) {
   const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
   const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
   const startingDayOfWeek = firstDay.getDay()
@@ -422,6 +484,12 @@ function MonthView({ jobs, exceptions, currentDate }: { jobs: any[]; exceptions:
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
   const blanks = Array.from({ length: startingDayOfWeek }, (_, i) => null)
   const calendar = [...blanks, ...days]
+
+  // Helper function to check if a specific day has working hours
+  const hasWorkingHours = (date: Date): boolean => {
+    const dayOfWeek = date.getDay()
+    return workingHours.some(wh => wh.dayOfWeek === dayOfWeek)
+  }
 
   return (
     <div>
@@ -441,6 +509,7 @@ function MonthView({ jobs, exceptions, currentDate }: { jobs: any[]; exceptions:
           const cellDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
           const isToday = cellDate.toDateString() === new Date().toDateString()
           const hasException = exceptions.some((exc) => exc.date.toDateString() === cellDate.toDateString())
+          const isWorking = hasWorkingHours(cellDate)
           const dayJobCount = jobs.length // Simplified for demo
 
           return (
@@ -449,7 +518,8 @@ function MonthView({ jobs, exceptions, currentDate }: { jobs: any[]; exceptions:
               className={cn(
                 "min-h-[100px] border-b border-r p-2 relative",
                 isToday && "bg-primary/5 border-primary",
-                hasException && "bg-destructive/5",
+                isWorking && "bg-green-50",
+                hasException && "bg-red-50",
               )}
             >
               <div className={cn("text-sm font-medium mb-1", isToday && "text-primary")}>{day}</div>

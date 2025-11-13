@@ -38,3 +38,4 @@ recommendations:
     - action: "Consider adding API integration tests"
       refs: ["src/SmartScheduler.Api/Endpoints/Jobs/JobEndpoints.cs"]
 
+

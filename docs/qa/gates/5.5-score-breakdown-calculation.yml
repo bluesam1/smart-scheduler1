@@ -43,3 +43,4 @@ recommendations:
     - action: "Include breakdown in Recommendation DTO when API is implemented (Story 6.1)"
       refs: ["src/SmartScheduler.Application/DTOs/ScoreBreakdown.cs"]
 
+

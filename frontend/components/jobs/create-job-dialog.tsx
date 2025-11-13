@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useSettings } from "@/lib/settings-context"
 import { useState } from "react"
 import { GooglePlacesAutocomplete, type PlaceResult } from "@/components/ui/google-places-autocomplete"
-import { SkillCombobox } from "@/components/ui/skill-combobox"
+import { MultiSelect } from "@/components/ui/multi-select"
 import { TimeSelect } from "@/components/ui/time-select"
 import { createApiClients } from "@/lib/api/api-client-config"
 import { useAuth } from "@/lib/auth/auth-context"
@@ -81,7 +81,7 @@ export function CreateJobDialog({ open, onOpenChange, onJobCreated }: CreateJobD
     if (!desiredTime) {
       errors.push("Please select a desired time")
     }
-    if (!duration || parseInt(duration) <= 0) {
+    if (!duration || parseFloat(duration) <= 0) {
       errors.push("Please enter a valid duration (hours)")
     }
     // Skills are optional - removed validation requirement
@@ -115,7 +115,8 @@ export function CreateJobDialog({ open, onOpenChange, onJobCreated }: CreateJobD
         return
       }
       
-      const durationMinutes = parseInt(duration) * 60
+      // Use parseFloat to handle decimal hours (e.g., 5.5 hours)
+      const durationMinutes = Math.round(parseFloat(duration) * 60)
       const endDateTime = new Date(startDateTime.getTime() + durationMinutes * 60000)
 
       // Create location from address fields
@@ -377,8 +378,9 @@ export function CreateJobDialog({ open, onOpenChange, onJobCreated }: CreateJobD
                 id="duration" 
                 type="number" 
                 placeholder="3" 
-                min="1" 
+                min="0.5" 
                 max="12"
+                step="0.5"
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
               />
@@ -387,11 +389,12 @@ export function CreateJobDialog({ open, onOpenChange, onJobCreated }: CreateJobD
 
           <div className="grid gap-2">
             <Label>Required Skills (Optional)</Label>
-            <SkillCombobox
-              availableSkills={skills}
-              selectedSkills={selectedSkills}
-              onSkillsChange={setSelectedSkills}
-              placeholder="Select or type required skills (optional)..."
+            <MultiSelect
+              options={skills}
+              selected={selectedSkills}
+              onChange={setSelectedSkills}
+              placeholder="Select or type required skills..."
+              disabled={isSubmitting}
             />
           </div>
 

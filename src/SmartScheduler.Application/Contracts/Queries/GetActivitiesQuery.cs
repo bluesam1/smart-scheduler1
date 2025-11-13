@@ -12,3 +12,4 @@ public record GetActivitiesQuery : IRequest<IReadOnlyList<ActivityDto>>
     public int Limit { get; init; } = 20; // Default 20, max 100
 }
 
+

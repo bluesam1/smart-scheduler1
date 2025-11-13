@@ -657,6 +657,824 @@
           }
         }
       }
+    },
+    "/api/jobs/{id}/latest-recommendations": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Get latest recommendations for a job",
+        "description": "Retrieves the most recent contractor recommendations for a job. Returns 404 if no recommendations have been calculated.",
+        "operationId": "GetLatestRecommendations",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/jobs/{id}/status": {
+      "put": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Update job status",
+        "description": "Updates the status of an existing job. Valid status transitions are enforced.",
+        "operationId": "UpdateJobStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateJobStatusRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/jobs/{id}/assign": {
+      "post": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Assign job to contractor",
+        "description": "Assigns a job to a contractor with the specified time slot. Availability is re-validated before assignment. Returns existing assignment if same request (idempotent).",
+        "operationId": "AssignJob",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignJobRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/jobs/{id}/reschedule": {
+      "put": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Reschedule job",
+        "description": "Reschedules a job to a new time slot. Validates feasibility for all assigned contractors and updates assignments accordingly.",
+        "operationId": "RescheduleJob",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleJobRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/jobs/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Cancel job",
+        "description": "Cancels a job and all its active assignments. Cannot cancel completed jobs.",
+        "operationId": "CancelJob",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelJobRequest"
+              }
+            }
+          },
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/recommendations": {
+      "post": {
+        "tags": [
+          "Recommendations"
+        ],
+        "summary": "Get contractor recommendations",
+        "description": "Get ranked contractor recommendations for a job with up to 3 suggested time slots per contractor.",
+        "operationId": "GetRecommendations",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecommendationRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "500": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/recommendations/recalculate": {
+      "post": {
+        "tags": [
+          "Recommendations"
+        ],
+        "summary": "Recalculate recommendations for a job",
+        "description": "Recalculates contractor recommendations for a job, updates the job's recommendation reference, and publishes a real-time update event.",
+        "operationId": "RecalculateRecommendations",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecalculateRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "500": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/settings/job-types": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "List available job types",
+        "description": "Get list of job types available for job creation",
+        "operationId": "GetJobTypes",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobTypesResponseDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Add new job type",
+        "description": "Add a new job type to the system",
+        "operationId": "AddJobType",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddJobTypeRequestDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddJobTypeResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Update job type",
+        "description": "Rename an existing job type",
+        "operationId": "UpdateJobType",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateJobTypeRequestDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Remove job type",
+        "description": "Remove a job type from the system",
+        "operationId": "DeleteJobType",
+        "parameters": [
+          {
+            "name": "jobType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/settings/skills": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "List available skills",
+        "description": "Get list of skills available for contractors and job requirements",
+        "operationId": "GetSkills",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillsResponseDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Add new skill",
+        "description": "Add a new skill to the system",
+        "operationId": "AddSkill",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddSkillRequestDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Update skill",
+        "description": "Rename an existing skill",
+        "operationId": "UpdateSkill",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSkillRequestDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Remove skill",
+        "description": "Remove a skill from the system",
+        "operationId": "DeleteSkill",
+        "parameters": [
+          {
+            "name": "skill",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/weights/current": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get current weights configuration",
+        "description": "Get the currently active scoring weights configuration",
+        "operationId": "GetCurrentWeightsConfig",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeightsConfigResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/weights/history": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get weights configuration history",
+        "description": "Get history of all weights configuration versions",
+        "operationId": "GetWeightsConfigHistory",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WeightsConfigHistoryItemDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/weights": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Update weights configuration",
+        "description": "Create a new version of the weights configuration",
+        "operationId": "UpdateWeightsConfig",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWeightsConfigRequestDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeightsConfigResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/weights/rollback": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Rollback weights configuration",
+        "description": "Rollback to a previous version of the weights configuration",
+        "operationId": "RollbackWeightsConfig",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RollbackWeightsConfigRequestDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeightsConfigResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/demo-data": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Generate demo data",
+        "description": "Populates the database with realistic demo data across multiple US timezones",
+        "operationId": "GenerateDemoData",
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          },
+          "500": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Delete all data",
+        "description": "WARNING: Deletes ALL data from the database (contractors, jobs, assignments, audit records, event logs). This operation cannot be undone!",
+        "operationId": "DeleteAllData",
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "500": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/demo-data/counts": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get data counts",
+        "description": "Gets counts of all data in the database",
+        "operationId": "GetDataCounts",
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "500": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/dashboard/stats": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Get dashboard statistics",
+        "description": "Retrieves dashboard statistics including active contractors, pending jobs, average assignment time, and utilization rate. Results are cached for 5 minutes.",
+        "operationId": "GetDashboardStatistics",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardStatisticsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/activity": {
+      "get": {
+        "tags": [
+          "Activity"
+        ],
+        "summary": "Get recent activities",
+        "description": "Retrieves recent system activities from the event log. Supports filtering by activity types and limiting results.",
+        "operationId": "GetActivities",
+        "parameters": [
+          {
+            "name": "types",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1027,6 +1845,11 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "lastRecommendationAuditId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
           }
         }
       },
@@ -1059,6 +1882,134 @@
           "endUtc": {
             "type": "string",
             "format": "date-time"
+          },
+          "distanceMeters": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "travelTimeMinutes": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        }
+      },
+      "RecommendationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "jobId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecommendationDto"
+            }
+          },
+          "bestRecommendationContractorId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "configVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RecommendationDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "contractorId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "contractorName": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number",
+            "format": "double"
+          },
+          "scoreBreakdown": {
+            "$ref": "#/components/schemas/ScoreBreakdown"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "suggestedSlots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeSlotDto"
+            }
+          },
+          "distance": {
+            "type": "number",
+            "format": "double"
+          },
+          "eta": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "contractorBaseLocation": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ScoreBreakdown": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "availability": {
+            "type": "number",
+            "format": "double"
+          },
+          "rating": {
+            "type": "number",
+            "format": "double"
+          },
+          "distance": {
+            "type": "number",
+            "format": "double"
+          },
+          "rotation": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        }
+      },
+      "TimeSlotDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "startUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -1176,6 +2127,479 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          }
+        }
+      },
+      "UpdateJobStatusRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          }
+        }
+      },
+      "JobStatus": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "Scheduled",
+          "InProgress",
+          "Completed",
+          "Canceled"
+        ],
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "AssignmentDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "jobId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "contractorId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "startUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "type": "string"
+          },
+          "auditId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AssignJobRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "contractorId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "startUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "auditId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "source": {
+            "type": "string"
+          }
+        }
+      },
+      "RescheduleJobRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "startUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CancelJobRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "RecommendationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "desiredDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "serviceWindow": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TimeWindowDto2"
+              }
+            ]
+          },
+          "maxResults": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "TimeWindowDto2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RecalculateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "JobTypesResponseDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "jobTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AddJobTypeResponseDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "jobType": {
+            "type": "string"
+          }
+        }
+      },
+      "AddJobTypeRequestDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "jobType": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateJobTypeRequestDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "oldValue": {
+            "type": "string"
+          },
+          "newValue": {
+            "type": "string"
+          }
+        }
+      },
+      "SkillsResponseDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AddSkillRequestDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "skill": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateSkillRequestDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "oldValue": {
+            "type": "string"
+          },
+          "newValue": {
+            "type": "string"
+          }
+        }
+      },
+      "WeightsConfigResponseDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weights": {
+            "$ref": "#/components/schemas/WeightFactorsDto"
+          },
+          "tieBreakers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rotation": {
+            "$ref": "#/components/schemas/RotationConfigDto"
+          },
+          "changeNotes": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "WeightFactorsDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "availability": {
+            "type": "number",
+            "format": "double"
+          },
+          "rating": {
+            "type": "number",
+            "format": "double"
+          },
+          "distance": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "RotationConfigDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "boost": {
+            "type": "number",
+            "format": "double"
+          },
+          "underUtilizationThreshold": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "WeightsConfigHistoryItemDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "changeNotes": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UpdateWeightsConfigRequestDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "weights": {
+            "$ref": "#/components/schemas/WeightFactorsDto"
+          },
+          "tieBreakers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rotation": {
+            "$ref": "#/components/schemas/RotationConfigDto"
+          },
+          "changeNotes": {
+            "type": "string"
+          }
+        }
+      },
+      "RollbackWeightsConfigRequestDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "changeNotes": {
+            "type": "string"
+          }
+        }
+      },
+      "DashboardStatisticsDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "activeContractors": {
+            "$ref": "#/components/schemas/StatMetric"
+          },
+          "pendingJobs": {
+            "$ref": "#/components/schemas/JobStatMetric"
+          },
+          "averageAssignmentTime": {
+            "$ref": "#/components/schemas/TimeMetric"
+          },
+          "utilizationRate": {
+            "$ref": "#/components/schemas/PercentMetric"
+          }
+        }
+      },
+      "StatMetric": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "changeIndicator": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "JobStatMetric": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unassigned": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "changeIndicator": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "TimeMetric": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "valueMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "changeIndicator": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "PercentMetric": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "type": "number",
+            "format": "double"
+          },
+          "changeIndicator": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ActivityDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {}
           }
         }
       }

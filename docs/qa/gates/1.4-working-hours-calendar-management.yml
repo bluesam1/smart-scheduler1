@@ -59,3 +59,4 @@ recommendations:
       refs: ["src/SmartScheduler.Application/Contracts/Handlers/"]
   future: []
 
+

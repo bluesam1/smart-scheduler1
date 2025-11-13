@@ -12,3 +12,4 @@ public record AssignJobCommand : IRequest<AssignmentDto>
     public AssignJobRequest Request { get; init; } = null!;
 }
 
+

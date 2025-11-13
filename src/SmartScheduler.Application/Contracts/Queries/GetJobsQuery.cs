@@ -13,3 +13,4 @@ public record GetJobsQuery : IRequest<IReadOnlyList<JobDto>>
     public int? Limit { get; init; }
 }
 
+

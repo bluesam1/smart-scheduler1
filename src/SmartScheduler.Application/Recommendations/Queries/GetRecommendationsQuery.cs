@@ -12,5 +12,11 @@ public record GetRecommendationsQuery : IRequest<RecommendationResponse>
     public DateOnly DesiredDate { get; init; }
     public TimeWindowDto? ServiceWindow { get; init; }
     public int MaxResults { get; init; } = 10;
+    /// <summary>
+    /// If true, publishes a RecommendationReady SignalR event after calculation.
+    /// Should only be true for explicit recalculations, not regular fetches.
+    /// </summary>
+    public bool PublishEvent { get; init; } = false;
 }
+
 

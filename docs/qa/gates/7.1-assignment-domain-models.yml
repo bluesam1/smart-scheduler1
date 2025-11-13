@@ -46,3 +46,4 @@ recommendations:
     - action: "Consider adding domain event handler tests to verify event publishing"
       refs: ["src/SmartScheduler.Domain/Contracts/Events/"]
 
+

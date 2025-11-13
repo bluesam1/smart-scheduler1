@@ -39,3 +39,4 @@ public interface ITravelBufferService
     int CalculateLastToBaseBuffer(int etaMinutes, double regionalMultiplier = 1.0);
 }
 
+
