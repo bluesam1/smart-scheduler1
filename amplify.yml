@@ -34,19 +34,13 @@ customHeaders:
         value: 'DENY'
       - key: 'X-XSS-Protection'
         value: '1; mode=block'
-redirects:
-  # Important: Order matters! More specific rules should come first
-  # First, explicitly handle static assets - these should be served as-is
-  # (Amplify should serve these automatically, but we're being explicit)
-  - source: '/_next/static/<*>'
-    target: '/_next/static/<*>'
-    status: '200'
-  - source: '/_next/image<*>'
-    target: '/_next/image<*>'
-    status: '200'
-  # Then, catch-all for client-side routing (SPA)
-  # This only applies to routes that don't match the above patterns
-  - source: '/<*>'
-    target: '/index.html'
-    status: '200'
+# Note: Amplify should automatically serve static files if they exist
+# The rewrite rule below should only apply when files don't exist
+# However, if static assets are being served as HTML, the rewrite is too aggressive
+# Try removing redirects entirely first - Next.js client-side routing may work without it
+# If direct URL access doesn't work, we'll need to add the rewrite back with exclusions
+# redirects:
+#   - source: '/<*>'
+#     target: '/index.html'
+#     status: '200'
 
