@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using SmartScheduler.Application.Contracts.DTOs;
@@ -35,6 +36,7 @@ public class GetRecommendationsQueryHandler : IRequestHandler<GetRecommendations
     private readonly IRotationBoostService _rotationBoostService;
     private readonly IScoringWeightsConfigLoader _configLoader;
     private readonly IRealtimePublisher _realtimePublisher;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<GetRecommendationsQueryHandler> _logger;
 
     public GetRecommendationsQueryHandler(
@@ -50,6 +52,7 @@ public class GetRecommendationsQueryHandler : IRequestHandler<GetRecommendations
         IRotationBoostService rotationBoostService,
         IScoringWeightsConfigLoader configLoader,
         IRealtimePublisher realtimePublisher,
+        IServiceScopeFactory serviceScopeFactory,
         ILogger<GetRecommendationsQueryHandler> logger)
     {
         _jobRepository = jobRepository;
@@ -64,6 +67,7 @@ public class GetRecommendationsQueryHandler : IRequestHandler<GetRecommendations
         _rotationBoostService = rotationBoostService;
         _configLoader = configLoader;
         _realtimePublisher = realtimePublisher;
+        _serviceScopeFactory = serviceScopeFactory;
         _logger = logger;
     }
 
@@ -224,11 +228,15 @@ public class GetRecommendationsQueryHandler : IRequestHandler<GetRecommendations
         var configVersion = _configLoader.GetConfig().Version;
 
         // Persist audit trail (fire-and-forget, don't block response)
+        // Create a new scope for the background task to avoid DbContext disposal issues
         _ = Task.Run(async () =>
         {
             try
             {
+                using var scope = _serviceScopeFactory.CreateScope();
+                var auditRepository = scope.ServiceProvider.GetRequiredService<IAuditRecommendationRepository>();
                 await PersistAuditTrailAsync(
+                    auditRepository,
                     requestId,
                     job.Id,
                     request,
@@ -281,6 +289,7 @@ public class GetRecommendationsQueryHandler : IRequestHandler<GetRecommendations
     /// Persists audit trail for recommendation request.
     /// </summary>
     private async Task PersistAuditTrailAsync(
+        IAuditRecommendationRepository auditRepository,
         Guid requestId,
         Guid jobId,
         GetRecommendationsQuery request,
@@ -328,7 +337,7 @@ public class GetRecommendationsQueryHandler : IRequestHandler<GetRecommendations
             configVersion,
             "system");
 
-        await _auditRepository.AddAsync(auditRecord, cancellationToken);
+        await auditRepository.AddAsync(auditRecord, cancellationToken);
     }
 
     /// <summary>

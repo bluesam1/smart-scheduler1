@@ -11,6 +11,7 @@
     "dev:all": "npm run dev"
   },
   "devDependencies": {
+    "archiver": "^7.0.1",
     "concurrently": "^8.2.2"
   },
   "repository": {

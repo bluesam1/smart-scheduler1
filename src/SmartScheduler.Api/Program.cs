@@ -22,6 +22,10 @@ using SmartScheduler.Infrastructure.ExternalServices;
 using SmartScheduler.Application.Recommendations.Configuration;
 using SmartScheduler.Infrastructure.Configuration;
 using System.Text.RegularExpressions;
+using Amazon.SecretsManager;
+using Amazon.SecretsManager.Model;
+using System.Text.Json;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,10 +51,130 @@ builder.Services.AddOpenApiDocument(config =>
     config.Description = "SmartScheduler API for job scheduling and contractor management";
 });
 
+// Get database connection string
+// Priority: 1) Secrets Manager (DB_SECRET_ARN), 2) Configuration (DefaultConnection), 3) Build from env vars
+string? connectionString = null;
+var dbSecretArn = Environment.GetEnvironmentVariable("DB_SECRET_ARN");
+
+if (!string.IsNullOrEmpty(dbSecretArn))
+{
+    try
+    {
+        var secretsClient = new AmazonSecretsManagerClient();
+        var secretRequest = new GetSecretValueRequest
+        {
+            SecretId = dbSecretArn
+        };
+        var secretResponse = secretsClient.GetSecretValueAsync(secretRequest).GetAwaiter().GetResult();
+        var secretValue = secretResponse.SecretString;
+        
+        // Log secret format (without sensitive data)
+        if (!string.IsNullOrEmpty(secretValue))
+        {
+            var preview = secretValue.Length > 100 ? secretValue.Substring(0, 100) + "..." : secretValue;
+            Log.Information("Retrieved secret from Secrets Manager (length: {Length}, preview: {Preview})", secretValue.Length, preview);
+        }
+        
+        // Try to parse as JSON (RDS secrets are typically JSON)
+        try
+        {
+            var secretJson = JsonSerializer.Deserialize<JsonElement>(secretValue);
+            if (secretJson.TryGetProperty("host", out var host) ||
+                secretJson.TryGetProperty("Host", out host))
+            {
+                // Build connection string from JSON
+                var hostValue = host.GetString() ?? "";
+                var port = "5432";
+                if (secretJson.TryGetProperty("port", out var portProp) || secretJson.TryGetProperty("Port", out portProp))
+                {
+                    port = portProp.ValueKind == JsonValueKind.Number ? portProp.GetInt32().ToString() : portProp.GetString() ?? "5432";
+                }
+                
+                var dbName = "smartscheduler";
+                if (secretJson.TryGetProperty("dbname", out var dbProp) || secretJson.TryGetProperty("DbName", out dbProp) || 
+                    secretJson.TryGetProperty("database", out dbProp) || secretJson.TryGetProperty("Database", out dbProp))
+                {
+                    dbName = dbProp.GetString() ?? "smartscheduler";
+                }
+                
+                var username = "postgres";
+                if (secretJson.TryGetProperty("username", out var userProp) || secretJson.TryGetProperty("Username", out userProp) || 
+                    secretJson.TryGetProperty("user", out userProp) || secretJson.TryGetProperty("User", out userProp))
+                {
+                    username = userProp.GetString() ?? "postgres";
+                }
+                
+                var password = "";
+                if (secretJson.TryGetProperty("password", out var passProp) || secretJson.TryGetProperty("Password", out passProp))
+                {
+                    password = passProp.GetString() ?? "";
+                }
+                
+                // Use NpgsqlConnectionStringBuilder to properly escape special characters
+                var connBuilder = new NpgsqlConnectionStringBuilder
+                {
+                    Host = hostValue,
+                    Port = int.Parse(port),
+                    Database = dbName,
+                    Username = username,
+                    Password = password
+                };
+                connectionString = connBuilder.ConnectionString;
+                Log.Information("Built database connection string from Secrets Manager JSON");
+            }
+            else
+            {
+                // Not JSON or doesn't have expected structure, use as-is
+                connectionString = secretValue;
+                Log.Information("Using connection string from Secrets Manager as-is");
+            }
+        }
+        catch (JsonException)
+        {
+            // Not JSON, use as connection string directly
+            connectionString = secretValue;
+            Log.Information("Using connection string from Secrets Manager as-is (not JSON)");
+        }
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Failed to retrieve connection string from Secrets Manager: {SecretArn}", dbSecretArn);
+        throw;
+    }
+}
+else
+{
+    // Try configuration first
+    connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    
+    // If not in config, try building from environment variables
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        var dbHost = Environment.GetEnvironmentVariable("DB_HOST");
+        var dbPort = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
+        var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "smartscheduler";
+        var dbUser = Environment.GetEnvironmentVariable("DB_USER") ?? "postgres";
+        var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
+        
+        if (!string.IsNullOrEmpty(dbHost) && !string.IsNullOrEmpty(dbPassword))
+        {
+            connectionString = $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
+            Log.Information("Built database connection string from environment variables");
+        }
+    }
+}
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException(
+        "Database connection string is required. Set DB_SECRET_ARN environment variable, " +
+        "or configure ConnectionStrings:DefaultConnection, or set DB_HOST, DB_PORT, DB_NAME, DB_USER, and DB_PASSWORD environment variables.");
+}
+
 // Configure Entity Framework Core with PostgreSQL
 builder.Services.AddDbContext<SmartSchedulerDbContext>(options =>
     options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
+        connectionString,
         npgsqlOptions => npgsqlOptions.UseNetTopologySuite()));
 
 // Add health checks

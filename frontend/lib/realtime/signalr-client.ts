@@ -81,6 +81,52 @@ export class SignalRClient {
   }
 
   /**
+   * Checks if a JWT token is expired or will expire soon (within 60 seconds)
+   */
+  private isTokenExpiredOrExpiringSoon(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const exp = payload.exp;
+      if (!exp) {
+        return true; // No expiration claim, treat as expired
+      }
+      // Check if token expires within 60 seconds
+      const expirationTime = exp * 1000;
+      const now = Date.now();
+      return expirationTime <= (now + 60000);
+    } catch (error) {
+      console.error("Error parsing token:", error);
+      return true; // If we can't parse it, treat as expired
+    }
+  }
+
+  /**
+   * Gets a valid access token, refreshing if necessary
+   */
+  private async getValidAccessToken(): Promise<string> {
+    let token = this.options.getAccessToken();
+    
+    // If no token, try to refresh
+    if (!token && this.options.refreshToken) {
+      token = await this.options.refreshToken();
+    }
+    
+    if (!token) {
+      throw new Error("No access token available for SignalR connection");
+    }
+    
+    // Check if token is expired or expiring soon, and refresh if needed
+    if (this.isTokenExpiredOrExpiringSoon(token) && this.options.refreshToken) {
+      const refreshedToken = await this.options.refreshToken();
+      if (refreshedToken) {
+        token = refreshedToken;
+      }
+    }
+    
+    return token;
+  }
+
+  /**
    * Creates and configures the SignalR connection
    */
   private createConnection(): signalR.HubConnection {
@@ -88,12 +134,8 @@ export class SignalRClient {
     
     const builder = new signalR.HubConnectionBuilder()
       .withUrl(hubUrl, {
-        accessTokenFactory: () => {
-          const token = this.options.getAccessToken();
-          if (!token) {
-            throw new Error("No access token available for SignalR connection");
-          }
-          return token;
+        accessTokenFactory: async () => {
+          return await this.getValidAccessToken();
         },
         withCredentials: true,
       });
@@ -226,6 +268,14 @@ export class SignalRClient {
     this.isConnecting = true;
 
     try {
+      // Validate token before attempting connection
+      try {
+        await this.getValidAccessToken();
+      } catch (tokenError) {
+        console.error("Failed to get valid access token for SignalR:", tokenError);
+        throw new Error("Cannot connect to SignalR: No valid access token available. Please log in again.");
+      }
+
       // Create connection if it doesn't exist
       if (!this.connection) {
         this.connection = this.createConnection();

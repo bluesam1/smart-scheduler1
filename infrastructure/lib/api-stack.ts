@@ -205,6 +205,8 @@ export class ApiStack extends cdk.Stack {
       },
       
       // VPC configuration (use same VPC as RDS)
+      // For load balancer, we need exactly one subnet per Availability Zone
+      // Filter public subnets to ensure we only have one per AZ
       {
         namespace: 'aws:ec2:vpc',
         optionName: 'VPCId',
@@ -218,7 +220,36 @@ export class ApiStack extends cdk.Stack {
       {
         namespace: 'aws:ec2:vpc',
         optionName: 'ELBSubnets',
-        value: props.database.vpc.publicSubnets.map(s => s.subnetId).join(','),
+        value: (() => {
+          // Get exactly one subnet per Availability Zone for the load balancer
+          // Application Load Balancers require exactly one subnet per AZ
+          const subnetsByAz = new Map<string, string>();
+          
+          // Sort subnets by ID to ensure consistent selection (take first one per AZ)
+          const sortedSubnets = [...props.database.vpc.publicSubnets].sort((a, b) => 
+            a.subnetId.localeCompare(b.subnetId)
+          );
+          
+          for (const subnet of sortedSubnets) {
+            const az = subnet.availabilityZone;
+            // Only add the first subnet we encounter for each AZ
+            if (!subnetsByAz.has(az)) {
+              subnetsByAz.set(az, subnet.subnetId);
+            }
+          }
+          
+          const selectedSubnets = Array.from(subnetsByAz.values());
+          
+          // Validate we have at least 2 AZs (required for ALB)
+          if (selectedSubnets.length < 2) {
+            throw new Error(
+              `Elastic Beanstalk ALB requires at least 2 availability zones, but only found ${selectedSubnets.length}. ` +
+              `Available public subnets: ${props.database.vpc.publicSubnets.map(s => `${s.subnetId} (${s.availabilityZone})`).join(', ')}`
+            );
+          }
+          
+          return selectedSubnets.join(',');
+        })(),
       },
       {
         namespace: 'aws:ec2:vpc',
