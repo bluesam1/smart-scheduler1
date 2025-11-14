@@ -35,9 +35,17 @@ customHeaders:
       - key: 'X-XSS-Protection'
         value: '1; mode=block'
 redirects:
-  # Rewrite all routes to index.html for client-side routing
-  # Amplify should automatically serve static files (like /_next/static/*) if they exist
-  # This rewrite only applies when the file doesn't exist
+  # Important: Order matters! More specific rules should come first
+  # First, explicitly handle static assets - these should be served as-is
+  # (Amplify should serve these automatically, but we're being explicit)
+  - source: '/_next/static/<*>'
+    target: '/_next/static/<*>'
+    status: '200'
+  - source: '/_next/image<*>'
+    target: '/_next/image<*>'
+    status: '200'
+  # Then, catch-all for client-side routing (SPA)
+  # This only applies to routes that don't match the above patterns
   - source: '/<*>'
     target: '/index.html'
     status: '200'
