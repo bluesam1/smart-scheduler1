@@ -40,6 +40,13 @@ export interface ApiStackProps extends cdk.StackProps {
    * @default 2
    */
   maxInstances?: number;
+  
+  /**
+   * SSL Certificate ARN from AWS Certificate Manager (ACM) for HTTPS listener
+   * If provided, an HTTPS listener will be configured on port 443
+   * Certificate must be in the same region as the stack
+   */
+  sslCertificateArn?: string;
 }
 
 export class ApiStack extends cdk.Stack {
@@ -291,6 +298,37 @@ export class ApiStack extends cdk.Stack {
         value: props.database.database.secret!.secretArn,
       },
     ];
+    
+    // Add HTTPS listener if SSL certificate ARN is provided
+    if (props.sslCertificateArn) {
+      optionSettings.push(
+        {
+          namespace: 'aws:elbv2:listener:443',
+          optionName: 'ListenerEnabled',
+          value: 'true',
+        },
+        {
+          namespace: 'aws:elbv2:listener:443',
+          optionName: 'Protocol',
+          value: 'HTTPS',
+        },
+        {
+          namespace: 'aws:elbv2:listener:443',
+          optionName: 'SSLCertificateArns',
+          value: props.sslCertificateArn,
+        },
+        {
+          namespace: 'aws:elbv2:listener:443',
+          optionName: 'DefaultProcess',
+          value: 'default',
+        },
+        {
+          namespace: 'aws:elbv2:listener:443',
+          optionName: 'SSLPolicy',
+          value: 'ELBSecurityPolicy-TLS-1-2-2017-01',
+        }
+      );
+    }
 
     // Create Elastic Beanstalk environment
     this.ebEnvironment = new elasticbeanstalk.CfnEnvironment(this, 'Environment', {
