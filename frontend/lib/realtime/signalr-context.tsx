@@ -86,14 +86,17 @@ export function SignalRProvider({
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
-        return response.ok;
+        // Consider API available if we get any response (even 401 means API is reachable)
+        // 401 is expected for /health endpoint when behind API Gateway
+        return response.status === 200 || response.status === 401;
       } catch (error) {
         clearTimeout(timeoutId);
         if (error instanceof Error && error.name === "AbortError") {
           // Timeout - API not responding
           return false;
         }
-        throw error;
+        // Network errors mean API is not available
+        return false;
       }
     } catch (error) {
       return false;
