@@ -13,3 +13,5 @@ public record UpdateContractorCommand : IRequest<ContractorDto>
 }
 
 
+
+

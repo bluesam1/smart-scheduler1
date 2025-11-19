@@ -178,3 +178,5 @@ public class GetActivitiesQueryHandler : IRequestHandler<GetActivitiesQuery, IRe
 }
 
 
+
+

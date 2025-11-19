@@ -47,3 +47,5 @@ recommendations:
       refs: ["src/SmartScheduler.Domain/Contracts/Events/"]
 
 
+
+

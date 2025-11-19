@@ -43,3 +43,5 @@ public class UpdateContractorWorkingHoursCommandHandler : IRequestHandler<Update
 }
 
 
+
+

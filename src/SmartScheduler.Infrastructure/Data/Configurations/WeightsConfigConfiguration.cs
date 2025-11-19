@@ -49,3 +49,5 @@ public class WeightsConfigConfiguration : IEntityTypeConfiguration<WeightsConfig
 }
 
 
+
+

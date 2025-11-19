@@ -13,3 +13,5 @@ public record GetActivitiesQuery : IRequest<IReadOnlyList<ActivityDto>>
 }
 
 
+
+

@@ -13,3 +13,5 @@ public record UpdateWeightsConfigCommand : IRequest<WeightsConfigResponseDto>
 }
 
 
+
+

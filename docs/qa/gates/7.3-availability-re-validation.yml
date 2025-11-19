@@ -68,3 +68,5 @@ recommendations:
       refs: ["src/SmartScheduler.Application/Contracts/Services/AvailabilityRevalidator.cs:40"]
 
 
+
+

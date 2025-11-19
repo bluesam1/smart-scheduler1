@@ -13,6 +13,7 @@
     "deploy:storage": "cdk deploy SmartScheduler-Storage",
     "deploy:cognito": "cdk deploy SmartScheduler-Cognito",
     "deploy:api": "cdk deploy SmartScheduler-Api",
+    "deploy:api-gateway": "cdk deploy SmartScheduler-ApiGateway",
     "deploy:frontend": "cdk deploy SmartScheduler-Frontend",
     "diff": "cdk diff",
     "synth": "cdk synth",

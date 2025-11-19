@@ -44,3 +44,5 @@ recommendations:
       refs: ["src/SmartScheduler.Domain.Tests/Scheduling/AvailabilityEngineTests.cs"]
 
 
+
+

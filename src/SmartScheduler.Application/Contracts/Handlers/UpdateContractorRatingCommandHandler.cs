@@ -38,3 +38,5 @@ public class UpdateContractorRatingCommandHandler : IRequestHandler<UpdateContra
 }
 
 
+
+

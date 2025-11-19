@@ -143,7 +143,8 @@ export class FrontendStack extends cdk.Stack {
       environmentVariables: {
         // Next.js environment variables
         NEXT_PUBLIC_API_URL: apiUrl,
-        NEXT_PUBLIC_SIGNALR_URL: `${apiUrl}/hubs`,
+        // SignalR hub is at /hub/recommendations (singular "hub" to match backend)
+        NEXT_PUBLIC_SIGNALR_URL: `${apiUrl}/hub/recommendations`,
         
         // Cognito configuration
         NEXT_PUBLIC_COGNITO_USER_POOL_ID: props.cognitoUserPoolId,
@@ -176,7 +177,8 @@ export class FrontendStack extends cdk.Stack {
       autoBuild: true,
       environmentVariables: {
         NEXT_PUBLIC_API_URL: apiUrl,
-        NEXT_PUBLIC_SIGNALR_URL: `${apiUrl}/hubs`,
+        // SignalR hub is at /hub/recommendations (singular "hub" to match backend)
+        NEXT_PUBLIC_SIGNALR_URL: `${apiUrl}/hub/recommendations`,
         NEXT_PUBLIC_COGNITO_USER_POOL_ID: props.cognitoUserPoolId,
         NEXT_PUBLIC_COGNITO_CLIENT_ID: props.cognitoAppClientId,
         NEXT_PUBLIC_COGNITO_REGION: cognitoRegion,

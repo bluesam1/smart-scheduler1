@@ -20,6 +20,8 @@ public static class AuthenticationExtensions
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            // Don't challenge anonymous requests - only challenge when authorization is explicitly required
+            options.DefaultForbidScheme = JwtBearerDefaults.AuthenticationScheme;
         })
         .AddJwtBearer(options =>
         {
@@ -151,6 +153,9 @@ public static class AuthenticationExtensions
     {
         services.AddAuthorization(options =>
         {
+            // IMPORTANT: Don't set a FallbackPolicy - this would require auth for ALL endpoints
+            // Only endpoints with .RequireAuthorization() will require authentication
+            
             // Admin policy - full access
             options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
             

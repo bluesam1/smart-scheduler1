@@ -12,3 +12,5 @@ public record GetJobByIdQuery : IRequest<JobDto?>
 }
 
 
+
+

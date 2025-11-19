@@ -39,3 +39,5 @@ recommendations:
       refs: ["src/SmartScheduler.Realtime/Services/SignalRRealtimePublisher.cs"]
 
 
+
+

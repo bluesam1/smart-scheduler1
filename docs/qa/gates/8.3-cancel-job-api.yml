@@ -39,3 +39,5 @@ recommendations:
       refs: ["src/SmartScheduler.Api/Endpoints/Jobs/JobEndpoints.cs"]
 
 
+
+

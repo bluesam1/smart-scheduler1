@@ -14,3 +14,5 @@ public record GetJobsQuery : IRequest<IReadOnlyList<JobDto>>
 }
 
 
+
+

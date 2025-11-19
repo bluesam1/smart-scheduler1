@@ -68,3 +68,5 @@ recommendations:
       refs: ["src/SmartScheduler.Domain/Contracts/Entities/Job.cs"]
 
 
+
+

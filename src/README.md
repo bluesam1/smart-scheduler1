@@ -136,3 +136,5 @@ CORS is configured to allow requests from `http://localhost:3000` (Next.js front
 - Connect frontend to backend (Story 0.4)
 
 
+
+

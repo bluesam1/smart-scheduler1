@@ -13,3 +13,5 @@ public record RollbackWeightsConfigCommand : IRequest<WeightsConfigResponseDto>
 }
 
 
+
+

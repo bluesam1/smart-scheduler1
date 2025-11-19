@@ -44,3 +44,5 @@ recommendations:
       refs: ["src/SmartScheduler.Application/Recommendations/Services/TieBreakerService.cs"]
 
 
+
+

@@ -12,3 +12,5 @@ public record GetContractorByIdQuery : IRequest<ContractorDto?>
 }
 
 
+
+

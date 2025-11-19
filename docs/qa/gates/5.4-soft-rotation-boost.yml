@@ -47,3 +47,5 @@ recommendations:
       refs: ["src/SmartScheduler.Application/Recommendations/Services/RotationBoostService.cs"]
 
 
+
+

@@ -46,3 +46,5 @@ recommendations:
       refs: ["src/SmartScheduler.Application/Recommendations/Services/RationaleGenerator.cs"]
 
 
+
+

@@ -299,7 +299,8 @@ export class ApiStack extends cdk.Stack {
       },
     ];
     
-    // Add HTTPS listener if SSL certificate ARN is provided
+    // Configure HTTPS listener if SSL certificate ARN is provided
+    // If not provided, explicitly disable HTTPS listener (pragmatic approach for internal APIs)
     if (props.sslCertificateArn) {
       optionSettings.push(
         {
@@ -325,7 +326,17 @@ export class ApiStack extends cdk.Stack {
         {
           namespace: 'aws:elbv2:listener:443',
           optionName: 'SSLPolicy',
-          value: 'ELBSecurityPolicy-TLS-1-2-2017-01',
+          value: 'ELBSecurityPolicy-TLS13-1-2-2021-06',
+        }
+      );
+    } else {
+      // Explicitly disable HTTPS listener when no certificate is provided
+      // This ensures HTTP-only configuration (common for internal APIs)
+      optionSettings.push(
+        {
+          namespace: 'aws:elbv2:listener:443',
+          optionName: 'ListenerEnabled',
+          value: 'false',
         }
       );
     }

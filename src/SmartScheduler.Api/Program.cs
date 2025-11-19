@@ -456,7 +456,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUi();
 }
 
-app.UseHttpsRedirection();
+// Only use HTTPS redirection if not behind a proxy (API Gateway handles HTTPS)
+// When behind API Gateway or load balancer, they handle HTTPS termination
+var isBehindProxy = app.Environment.IsProduction() || 
+                     !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_EXECUTION_ENV"));
+if (!isBehindProxy)
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors();
 
 // Authentication and Authorization middleware (must be after CORS, before endpoints)
@@ -464,6 +472,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Health check endpoint (public, no auth required)
+// Map before other endpoints to ensure it's accessible
+// Note: MapHealthChecks doesn't require authorization by default, but we need to ensure
+// the authorization middleware doesn't apply a default policy
 app.MapHealthChecks("/health");
 
 // SignalR hub endpoint (requires authentication)

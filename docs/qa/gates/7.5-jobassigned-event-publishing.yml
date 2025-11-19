@@ -65,3 +65,5 @@ recommendations:
       refs: ["src/SmartScheduler.Application/Contracts/Handlers/AssignJobCommandHandler.cs:120"]
 
 
+
+

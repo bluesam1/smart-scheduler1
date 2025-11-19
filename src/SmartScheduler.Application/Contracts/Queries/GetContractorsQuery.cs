@@ -13,3 +13,5 @@ public record GetContractorsQuery : IRequest<IReadOnlyList<ContractorDto>>
 }
 
 
+
+

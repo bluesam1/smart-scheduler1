@@ -9,3 +9,5 @@ namespace SmartScheduler.Application.Contracts.Queries;
 public record GetWeightsConfigHistoryQuery : IRequest<IReadOnlyList<WeightsConfigHistoryItemDto>>;
 
 
+
+

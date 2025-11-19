@@ -138,6 +138,10 @@ export class SignalRClient {
           return await this.getValidAccessToken();
         },
         withCredentials: true,
+        // API Gateway HTTP API v2 doesn't support WebSockets, so use HTTP long polling
+        // SignalR will automatically fall back to long polling, but we can be explicit
+        transport: signalR.HttpTransportType.LongPolling,
+        skipNegotiation: false, // Need negotiation to get connection info from server
       });
 
     if (this.options.automaticReconnect) {
