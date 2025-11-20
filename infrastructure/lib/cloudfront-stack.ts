@@ -30,6 +30,31 @@ export class CloudFrontStack extends cdk.Stack {
     // Strip http:// prefix if present
     const backendHost = props.backendEndpoint.replace(/^https?:\/\//, '');
 
+    // Create CORS response headers policy
+    const corsResponseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'CorsResponseHeadersPolicy', {
+      comment: 'CORS policy for SmartScheduler API',
+      corsBehavior: {
+        accessControlAllowOrigins: [
+          'https://main.dea48cmln6qtz.amplifyapp.com',
+          'http://localhost:3000',
+        ],
+        accessControlAllowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
+        accessControlAllowHeaders: [
+          'Content-Type',
+          'Authorization',
+          'X-Requested-With',
+          'Accept',
+          'Origin',
+          'X-SignalR-User-Agent',
+          'Cache-Control',
+          'Pragma',
+        ],
+        accessControlAllowCredentials: true,
+        accessControlMaxAge: cdk.Duration.days(1),
+        originOverride: false, // Don't override if backend sends CORS headers
+      },
+    });
+
     // Create CloudFront distribution with ELB as origin
     this.distribution = new cloudfront.Distribution(this, 'Distribution', {
       comment: 'SmartScheduler API - HTTPS proxy for Elastic Beanstalk',
@@ -44,6 +69,8 @@ export class CloudFrontStack extends cdk.Stack {
         cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
         // Origin request policy: forward all query strings, headers, and cookies
         originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER,
+        // Response headers policy: add CORS headers
+        responseHeadersPolicy: corsResponseHeadersPolicy,
         // Viewer protocol policy: redirect HTTP to HTTPS
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         // Compress responses
