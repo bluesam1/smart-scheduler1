@@ -25,6 +25,7 @@ using System.Text.RegularExpressions;
 using Amazon.SecretsManager;
 using Amazon.SecretsManager.Model;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http.Json;
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,6 +42,21 @@ builder.Host.UseSerilog();
 
 // Add services to the container
 builder.Services.AddEndpointsApiExplorer();
+
+// Configure JSON serialization to use camelCase (matches JavaScript conventions)
+// This affects minimal API endpoints using Results.Ok(), Results.Json(), etc.
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.SerializerOptions.WriteIndented = false;
+});
+
+// Also configure default JSON options for SignalR and other serialization scenarios
+builder.Services.Configure<JsonOptions>(options =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.SerializerOptions.WriteIndented = false;
+});
 
 // Configure NSwag for OpenAPI/Swagger
 builder.Services.AddOpenApiDocument(config =>
@@ -184,8 +200,12 @@ builder.Services.AddHealthChecks();
 builder.Services.AddCognitoAuthentication(builder.Configuration);
 builder.Services.AddRoleBasedAuthorization();
 
-// Add SignalR
-builder.Services.AddSignalR();
+// Add SignalR with camelCase JSON serialization
+builder.Services.AddSignalR(options =>
+{
+    // Configure SignalR to use camelCase for JSON serialization
+    options.EnableDetailedErrors = builder.Environment.IsDevelopment();
+});
 
 // Register real-time publisher service
 builder.Services.AddScoped<IRealtimePublisher, SignalRRealtimePublisher>();
@@ -478,6 +498,7 @@ app.UseAuthorization();
 app.MapHealthChecks("/health");
 
 // SignalR hub endpoint (requires authentication)
+// SignalR will use the configured JSON options from ConfigureHttpJsonOptions
 app.MapHub<RecommendationsHub>("/hub/recommendations")
     .RequireAuthorization();
 

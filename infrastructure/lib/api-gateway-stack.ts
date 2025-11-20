@@ -55,32 +55,31 @@ export class ApiGatewayStack extends cdk.Stack {
         allowMethods: [apigatewayv2.CorsHttpMethod.ANY],
         // Explicitly list headers - required when allowCredentials is true
         // API Gateway HTTP API v2 may not accept ['*'] with credentials enabled
+        // Include SignalR-specific headers
         allowHeaders: [
           'Content-Type',
           'Authorization',
           'X-Requested-With',
           'Accept',
           'Origin',
+          'X-SignalR-User-Agent',
+          'Cache-Control',
+          'Pragma',
         ],
         allowCredentials: true, // Required for authentication cookies/headers
         maxAge: cdk.Duration.days(1),
       },
     });
 
-    // Create integration to proxy all requests to Elastic Beanstalk backend
+    // Go back to using the high-level HttpUrlIntegration construct
+    // It should handle path variables and query strings correctly
     const backendIntegration = new integrations.HttpUrlIntegration('BackendIntegration', backendUrl);
 
     // Add catch-all route that proxies to backend
     // NOTE: Do NOT include OPTIONS here - API Gateway handles it via corsPreflight
     this.httpApi.addRoutes({
       path: '/{proxy+}',
-      methods: [
-        apigatewayv2.HttpMethod.GET,
-        apigatewayv2.HttpMethod.POST,
-        apigatewayv2.HttpMethod.PUT,
-        apigatewayv2.HttpMethod.DELETE,
-        apigatewayv2.HttpMethod.PATCH,
-      ],
+      methods: [apigatewayv2.HttpMethod.ANY],
       integration: backendIntegration,
     });
 
@@ -88,13 +87,7 @@ export class ApiGatewayStack extends cdk.Stack {
     // NOTE: Do NOT include OPTIONS here - API Gateway handles it via corsPreflight
     this.httpApi.addRoutes({
       path: '/',
-      methods: [
-        apigatewayv2.HttpMethod.GET,
-        apigatewayv2.HttpMethod.POST,
-        apigatewayv2.HttpMethod.PUT,
-        apigatewayv2.HttpMethod.DELETE,
-        apigatewayv2.HttpMethod.PATCH,
-      ],
+      methods: [apigatewayv2.HttpMethod.ANY],
       integration: backendIntegration,
     });
 

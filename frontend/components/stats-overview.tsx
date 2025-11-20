@@ -136,31 +136,32 @@ export function StatsOverview() {
     return null
   }
 
+  // Add null checks for nested properties to prevent runtime errors
   const stats = [
     {
       title: "Active Contractors",
-      value: statistics.activeContractors.value.toString(),
-      change: statistics.activeContractors.changeIndicator || "",
+      value: statistics.activeContractors?.value?.toString() ?? "0",
+      change: statistics.activeContractors?.changeIndicator || "",
       icon: Users,
     },
     {
       title: "Pending Jobs",
-      value: statistics.pendingJobs.value.toString(),
-      change: statistics.pendingJobs.unassigned > 0
-        ? `${statistics.pendingJobs.unassigned} unassigned${statistics.pendingJobs.changeIndicator ? ` • ${statistics.pendingJobs.changeIndicator}` : ""}`
-        : statistics.pendingJobs.changeIndicator || "",
+      value: statistics.pendingJobs?.value?.toString() ?? "0",
+      change: (statistics.pendingJobs?.unassigned ?? 0) > 0
+        ? `${statistics.pendingJobs.unassigned} unassigned${statistics.pendingJobs?.changeIndicator ? ` • ${statistics.pendingJobs.changeIndicator}` : ""}`
+        : statistics.pendingJobs?.changeIndicator || "",
       icon: Briefcase,
     },
     {
       title: "Avg Assignment Time",
-      value: formatTime(statistics.averageAssignmentTime.valueMinutes),
-      change: statistics.averageAssignmentTime.changeIndicator || "",
+      value: formatTime(statistics.averageAssignmentTime?.valueMinutes ?? 0),
+      change: statistics.averageAssignmentTime?.changeIndicator || "",
       icon: Clock,
     },
     {
       title: "Utilization Rate",
-      value: formatPercent(statistics.utilizationRate.value),
-      change: statistics.utilizationRate.changeIndicator || "",
+      value: formatPercent(statistics.utilizationRate?.value ?? 0),
+      change: statistics.utilizationRate?.changeIndicator || "",
       icon: TrendingUp,
     },
   ]
